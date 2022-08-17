@@ -1,0 +1,61 @@
+package com.github.badoualy.storyeditor
+
+import androidx.compose.runtime.Stable
+import androidx.compose.ui.graphics.Color
+import kotlinx.collections.immutable.toImmutableList
+
+/**
+ * Base element that can be added to a [StoryEditor]
+ */
+@Stable
+interface StoryElement {
+
+    /** true if clickable when [StoryEditorState.editMode] is false */
+    val clickableInPreviewMode: Boolean
+
+    /**
+     * Called when the element gains focus and should update its state to an edit mode.
+     * By default, calling startEdit will disable scale/rotation transformations.
+     */
+    suspend fun startEdit()
+
+    /** @return true if the element should be kept, false otherwise */
+    suspend fun stopEdit(): Boolean
+
+    data class ColorScheme(val primary: Color, val secondary: Color) {
+
+        companion object {
+
+            val White = ColorScheme(primary = Color.White, secondary = Color.Black)
+            val Black = ColorScheme(primary = Color.Black, secondary = Color.White)
+            val Magenta = ColorScheme(primary = Color.Magenta, secondary = Color.White)
+            val Cyan = ColorScheme(primary = Color.Cyan, secondary = Color.White)
+            val Blue = ColorScheme(primary = Color.Blue, secondary = Color.White)
+            val Green = ColorScheme(primary = Color.Green, secondary = Color.White)
+            val Yellow = ColorScheme(primary = Color.Yellow, secondary = Color.Black)
+            val Red = ColorScheme(primary = Color.Red, secondary = Color.White)
+
+            val DefaultList = listOf(
+                White,
+                Black,
+                Magenta,
+                Cyan,
+                Blue,
+                Green,
+                Yellow,
+                Red
+            ).toImmutableList()
+        }
+    }
+}
+
+/**
+ * A [StoryElement] that hols a [StoryElementTransformation].
+ * Each element that can be dragged/scaled/rotated must implement this interface to be able
+ * to apply predefined modifiers.
+ */
+@Stable
+interface TransformableStoryElement : StoryElement {
+
+    val transformation: StoryElementTransformation
+}
