@@ -4,6 +4,8 @@
 
 Instagram-like story editor to add content to your pictures.
 
+Note: this is still a WIP
+
 <img src="https://github.com/badoualy/story-editor/blob/main/ART/preview.gif" width="300">
 
 Setup
