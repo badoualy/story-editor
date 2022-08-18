@@ -1,8 +1,4 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
-@file:OptIn(
-    ExperimentalLayoutApi::class,
-    ExperimentalComposeUiApi::class,
-)
 
 package com.github.badoualy.storyeditor
 
@@ -12,7 +8,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,7 +26,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
@@ -41,7 +35,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalDensity
@@ -336,18 +329,18 @@ private class StoryEditorScopeImpl(
             }
             Modifier
                 .padding(paddingValues)
-                .onPlaced {
+                .onSizeChanged {
                     transformation.updateSize(
-                        size = it.size,
+                        size = it,
                         sizeDp = with(density) {
                             DpSize(
-                                width = it.size.width.toDp(),
-                                height = it.size.height.toDp()
+                                width = it.width.toDp(),
+                                height = it.height.toDp()
                             )
                         },
                         hitboxSize = IntSize(
-                            width = it.size.width + hitboxPaddingSize.width,
-                            height = it.size.height + hitboxPaddingSize.height
+                            width = it.width + hitboxPaddingSize.width,
+                            height = it.height + hitboxPaddingSize.height
                         ),
                         editorSize = editorState.editorSize
                     )

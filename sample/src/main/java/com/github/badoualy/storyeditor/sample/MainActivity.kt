@@ -109,7 +109,7 @@ private fun Content(
         mutableStateListOf(
             StoryTextElement(
                 text = "Kyoto",
-                offset = Offset(0.2f, 0.2f)
+                positionFraction = Offset(0.2f, 0.2f)
             )
         )
     }
