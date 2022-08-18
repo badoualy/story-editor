@@ -87,7 +87,7 @@ class StoryTextElement(
     initialSizeFraction: Size? = null,
     scale: Float = 1f,
     rotation: Float = 0f,
-    offset: Offset = StoryTextElementDefaults.EditPositionFraction,
+    positionFraction: Offset = StoryTextElementDefaults.EditPositionFraction,
     private val editPositionFraction: Offset = StoryTextElementDefaults.EditPositionFraction,
 
     minScale: Float = 0.5f,
@@ -106,7 +106,7 @@ class StoryTextElement(
         initialSizeFraction = initialSizeFraction,
         scale = scale,
         rotation = rotation,
-        positionFraction = offset,
+        positionFraction = positionFraction,
 
         minScale = minScale,
         maxScale = maxScale

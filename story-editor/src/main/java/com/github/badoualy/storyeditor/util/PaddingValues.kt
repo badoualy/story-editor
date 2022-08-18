@@ -11,4 +11,3 @@ fun PaddingValues.verticalPadding(): Dp {
 fun PaddingValues.horizontalPadding(): Dp {
     return calculateLeftPadding(LayoutDirection.Ltr) + calculateRightPadding(LayoutDirection.Ltr)
 }
-
