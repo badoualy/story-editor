@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -234,13 +235,24 @@ fun StoryEditorScope.TextElement(
                     editorState.isFocusable(element)
                 }
             }
+            val isEmpty by remember(element) { derivedStateOf { element.text.text.isEmpty() } }
             BasicTextField(
                 value = element.text,
                 onValueChange = { element.text = it },
                 modifier = Modifier
                     .width(IntrinsicSize.Min)
-                    .background(element.backgroundColor(), elementShape)
-                    .padding(elementPadding)
+                    // Cursor thickness is 2.dp
+                    .widthIn(min = 2.dp)
+                    .then(
+                        if (isEmpty) {
+                            // Only draw cursor if input is empty
+                            Modifier
+                        } else {
+                            Modifier
+                                .background(element.backgroundColor(), elementShape)
+                                .padding(elementPadding)
+                        }
+                    )
                     .elementFocus(element, focusRequester),
                 textStyle = element.textStyle(),
                 enabled = isEnabled,
