@@ -35,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
@@ -141,9 +140,9 @@ private fun Content(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(9f / 16f)
-                        .clip(RoundedCornerShape(8.dp))
                 )
-            }
+            },
+            shape = RoundedCornerShape(8.dp)
         ) { element ->
             when (element) {
                 is StoryTextElement -> {
@@ -178,7 +177,7 @@ private fun rememberStoryEditorState(): StoryEditorState {
             elementsBoundsFraction = Rect(0.01f, 0.1f, 0.99f, 0.99f),
             editMode = true,
             debug = true,
-            screenshotEnabled = true
+            screenshotMode = StoryEditorState.ScreenshotMode.CONTENT
         )
     }
 }

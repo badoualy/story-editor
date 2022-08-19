@@ -28,15 +28,17 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.DpSize
@@ -44,7 +46,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.util.fastAny
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import com.github.badoualy.storyeditor.component.EditorDeleteButton
 import com.github.badoualy.storyeditor.util.horizontalPadding
@@ -54,46 +55,37 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
-// TODO: when dragging, exclude dynamically from gesture navigation the pointer region
+/*
+    TODO:
+        * when dragging, exclude dynamically from gesture navigation the pointer region
+ */
 @Composable
 fun StoryEditor(
-    state: StoryEditorState,
     elements: ImmutableList<StoryElement>,
-    onDeleteElement: (StoryElement) -> Unit,
-    modifier: Modifier = Modifier,
     onClick: () -> Unit,
+    onDeleteElement: (StoryElement) -> Unit,
     background: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    state: StoryEditorState = remember { StoryEditorState() },
+    shape: Shape = RectangleShape,
     content: @Composable StoryEditorScope.(StoryElement) -> Unit
 ) {
-    val actualContent = @Composable {
-        key(state) {
+    // When used in a Pager, without wrapping in a key, the size is never reported, investigate
+    key(state) {
+        ScreenshotContent(
+            state = state,
+            layer = ScreenshotLayer.EDITOR,
+            modifier = modifier
+        ) {
             StoryEditorContent(
                 state = state,
                 elements = elements,
-                onDeleteElement = onDeleteElement,
                 onClick = onClick,
+                onDeleteElement = onDeleteElement,
                 background = background,
+                shape = shape,
                 content = content
             )
-        }
-    }
-
-    if (state.screenshotEnabled) {
-        // Wrap composable in a AndroidView to be able to draw it to a bitmap
-        AndroidView(
-            factory = { context ->
-                ComposeView(context).apply {
-                    setContent {
-                        actualContent()
-                        ListenToScreenshotRequest(editorState = state)
-                    }
-                }
-            },
-            modifier = modifier
-        )
-    } else {
-        Box(modifier = modifier) {
-            actualContent()
         }
     }
 }
@@ -102,15 +94,18 @@ fun StoryEditor(
 private fun StoryEditorContent(
     state: StoryEditorState,
     elements: ImmutableList<StoryElement>,
+    onClick: () -> Unit,
     onDeleteElement: (StoryElement) -> Unit,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit,
     background: @Composable () -> Unit,
+    shape: Shape = RectangleShape,
     content: @Composable StoryEditorScope.(StoryElement) -> Unit
 ) {
     Box(modifier = modifier.fillMaxSize()) {
+        // Background
         Box(
             modifier = Modifier
+                .clip(shape)
                 .onSizeChanged { state.updateBackgroundSize(it) }
                 .pointerInput(state, state.editMode) {
                     if (!state.editMode) return@pointerInput
@@ -122,7 +117,12 @@ private fun StoryEditorContent(
                     }
                 }
         ) {
-            background()
+            ScreenshotContent(
+                state = state,
+                layer = ScreenshotLayer.BACKGROUND
+            ) {
+                background()
+            }
         }
 
         // Edit mode actions
@@ -158,17 +158,23 @@ private fun StoryEditorContent(
         }
 
         // Elements
-        val scope = remember(state) { StoryEditorScopeImpl(state) }
-        with(scope) {
-            elements.forEach { element ->
-                key(element) {
-                    val isFocusedElement by remember(state) { derivedStateOf { editorState.focusedElement == element } }
+        ScreenshotContent(
+            state = state,
+            layer = ScreenshotLayer.ELEMENTS,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val scope = remember(state) { StoryEditorScopeImpl(state) }
+            with(scope) {
+                elements.forEach { element ->
+                    key(element) {
+                        val isFocusedElement by remember(state) { derivedStateOf { state.focusedElement == element } }
 
-                    Box(
-                        // Make sure the focus element is on top of others
-                        modifier = Modifier.zIndex(if (isFocusedElement) 1f else 0f)
-                    ) {
-                        content(element)
+                        Box(
+                            // Make sure the focus element is on top of others
+                            modifier = Modifier.zIndex(if (isFocusedElement) 1f else 0f)
+                        ) {
+                            content(element)
+                        }
                     }
                 }
             }

@@ -3,29 +3,45 @@ package com.github.badoualy.storyeditor
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.viewinterop.AndroidView
+import com.github.badoualy.storyeditor.StoryEditorState.ScreenshotMode
+import kotlinx.coroutines.flow.filter
+
+internal enum class ScreenshotLayer {
+    EDITOR,
+    BACKGROUND,
+    ELEMENTS
+}
 
 @Stable
 internal data class ScreenshotRequest(
-    val config: Bitmap.Config,
-    val callback: (Bitmap) -> Unit,
+    val layer: ScreenshotLayer,
+    val destination: Bitmap,
+    val onSuccess: () -> Unit,
     val onError: (Throwable) -> Unit
 )
 
 @Composable
-internal fun View.ListenToScreenshotRequest(editorState: StoryEditorState) {
+internal fun View.ListenToScreenshotRequest(
+    editorState: StoryEditorState,
+    layer: ScreenshotLayer
+) {
     LaunchedEffect(editorState) {
+        require(editorState.screenshotMode != ScreenshotMode.DISABLED) {
+            "Screenshot support disabled"
+        }
         editorState.screenshotRequest
+            .filter { it.layer == layer }
             .collect { request ->
                 try {
-                    val bitmap = drawToBitmap(
-                        size = editorState.editorSize,
-                        config = request.config
-                    )
-                    request.callback(bitmap)
+                    drawToBitmap(destination = request.destination)
+                    request.onSuccess()
                 } catch (e: Exception) {
                     request.onError(e)
                 }
@@ -33,19 +49,33 @@ internal fun View.ListenToScreenshotRequest(editorState: StoryEditorState) {
     }
 }
 
-private fun View.drawToBitmap(
-    size: IntSize,
-    config: Bitmap.Config = Bitmap.Config.ARGB_8888
-): Bitmap {
-    check(isLaidOut) { "View needs to be laid out before calling drawToBitmap()" }
-    return Bitmap.createBitmap(size.width, size.height, config).applyCanvas {
-        translate(-scrollX.toFloat(), -scrollY.toFloat())
-        draw(this)
+@Composable
+internal fun ScreenshotContent(
+    state: StoryEditorState,
+    layer: ScreenshotLayer,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    if (layer in state.screenshotMode.layers) {
+        AndroidView(
+            factory = { context ->
+                ComposeView(context).apply {
+                    setContent {
+                        content()
+                        ListenToScreenshotRequest(editorState = state, layer = layer)
+                    }
+                }
+            },
+            modifier = modifier
+        )
+    } else {
+        Box(modifier = modifier) {
+            content()
+        }
     }
 }
 
-private inline fun Bitmap.applyCanvas(block: Canvas.() -> Unit): Bitmap {
-    val c = Canvas(this)
-    c.block()
-    return this
+private fun View.drawToBitmap(destination: Bitmap) {
+    check(isLaidOut) { "View needs to be laid out before calling drawToBitmap()" }
+    draw(Canvas(destination))
 }

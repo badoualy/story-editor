@@ -1,3 +1,5 @@
+@file:Suppress("MemberVisibilityCanBePrivate", "unused")
+
 package com.github.badoualy.storyeditor
 
 import android.graphics.Bitmap
@@ -9,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntSize
+import com.github.badoualy.storyeditor.StoryEditorState.ScreenshotMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,13 +27,16 @@ import kotlin.coroutines.suspendCoroutine
  *   eg:
  *       - left 0.1 means elements' offset can't be smaller than 10% of the width
  *       - right 0.9 means elements' right position in parent can't exceed 90% of the width
+ * @param screenshotMode screenshot support mode.
+ * When using this, parts of the editor will be wrapped in an ComposeView inside an AndroidView.
+ * see [ScreenshotMode]
  * @param debug In debug mode, the editor will draw the bounds of each element's hitbox
  */
 @Stable
 class StoryEditorState(
     private val elementsBoundsFraction: Rect = Rect(0.0f, 0.0f, 1f, 1f),
     editMode: Boolean = true,
-    val screenshotEnabled: Boolean = false,
+    val screenshotMode: ScreenshotMode = ScreenshotMode.DISABLED,
     val debug: Boolean = false
 ) {
 
@@ -61,17 +67,35 @@ class StoryEditorState(
     private val _screenshotRequest = MutableSharedFlow<ScreenshotRequest>(extraBufferCapacity = 1)
     internal val screenshotRequest get() = _screenshotRequest.asSharedFlow()
 
-    suspend fun takeScreenshot(config: Bitmap.Config = Bitmap.Config.RGB_565): Bitmap {
-        require(screenshotEnabled) { "screenshotMode not enabled" }
+    suspend fun takeScreenshot(destination: Bitmap) {
+        require(screenshotMode != ScreenshotMode.DISABLED) { "screenshotMode set to DISABLED" }
 
-        return suspendCoroutine { cont ->
-            _screenshotRequest.tryEmit(
-                ScreenshotRequest(
-                    config = config,
-                    onError = { cont.resumeWithException(it) },
-                    callback = { cont.resume(it) }
+        screenshotMode.layers.forEach { layer ->
+            suspendCoroutine { cont ->
+                _screenshotRequest.tryEmit(
+                    ScreenshotRequest(
+                        layer = layer,
+                        destination = destination,
+                        onError = cont::resumeWithException,
+                        onSuccess = { cont.resume(Unit) }
+                    )
                 )
-            )
+            }
+        }
+    }
+
+    suspend fun takeScreenshot(config: Bitmap.Config = Bitmap.Config.RGB_565): Bitmap {
+        require(screenshotMode != ScreenshotMode.DISABLED) { "screenshotMode set to DISABLED" }
+        val destination = withContext(Dispatchers.Default) {
+            Bitmap.createBitmap(editorSize.width, editorSize.height, config)
+        }
+
+        try {
+            takeScreenshot(destination)
+            return destination
+        } catch (e: Exception) {
+            destination.recycle()
+            throw e
         }
     }
 
@@ -80,12 +104,13 @@ class StoryEditorState(
         config: Bitmap.Config = Bitmap.Config.RGB_565
     ): Uri {
         val screenshot = takeScreenshot(config)
+
         return withContext(Dispatchers.IO) {
-            val file = File(directory, "story_editor_screenshot.jpg").apply {
+            val file = File(directory, "story_editor_screenshot.png").apply {
                 if (exists()) delete()
             }
             file.outputStream().use {
-                screenshot.compress(Bitmap.CompressFormat.JPEG, 100, it)
+                screenshot.compress(Bitmap.CompressFormat.PNG, 100, it)
             }
 
             Uri.fromFile(file)
@@ -104,5 +129,22 @@ class StoryEditorState(
             right = size.width * elementsBoundsFraction.right,
             bottom = size.height * elementsBoundsFraction.bottom
         )
+    }
+
+    enum class ScreenshotMode(internal val layers: Array<ScreenshotLayer>) {
+        /** Screenshot support is disabled, no AndroidView used */
+        DISABLED(layers = emptyArray()),
+
+        /** Screenshot support is enabled, and the screenshot will contain background + content */
+        FULL(layers = arrayOf(ScreenshotLayer.EDITOR)),
+
+        /**
+         * Same as [FULL], but the screenshot won't be clipped to the [StoryEditor]'s shape.
+         * This is useful when you specify a shape for the background, and you don't want the screenshot to be clipped.
+         */
+        FULL_NOT_CLIPPED(layers = arrayOf(ScreenshotLayer.BACKGROUND, ScreenshotLayer.ELEMENTS)),
+
+        /** Screenshot support is enabled, and the screenshot will contain only the content without the background */
+        CONTENT(layers = arrayOf(ScreenshotLayer.ELEMENTS))
     }
 }
