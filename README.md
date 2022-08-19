@@ -75,7 +75,7 @@ private fun rememberStoryEditorState(): StoryEditorState {
       elementsBoundsFraction = Rect(0.01f, 0.1f, 0.99f, 0.99f),
       editMode = true,
       debug = true, // draws hitbox red box
-      screenshotEnabled = true
+      screenshotMode = StoryEditorState.ScreenshotMode.FULL
     )
   }
 }
@@ -85,10 +85,11 @@ private fun rememberStoryEditorState(): StoryEditorState {
 Screenshot
 ----------------
 
-You can take a screenshot of the editor's content via `editorState.takeScreenshot()`. To do this,
-you need to enable the screenshot mode when creating your `StoryEditorState`. To do this,
-a `ComposeView` is used to render the editor inside an `AndroidView`, which can then be rendered on
-a bitmap. Because of this overhead, this feature is opt-in and disabled by default.
+You can take a screenshot of the editor's content via `editorState.takeScreenshot()`.
+
+* Specify a screenshot mode when creating your `StoryEditorState`.
+* A `ComposeView` is used to render the editor inside an `AndroidView`, which can then be rendered
+  on a bitmap. Because of this overhead, this feature is opt-in and disabled by default.
 
 Current restrictions:
 
@@ -96,6 +97,16 @@ Current restrictions:
   `Software rendering doesn't support hardware bitmaps`. If you're using Coil/Glide/... you can
   disable hardware bitmap when creating the request.
 * If your background is clipped to a given shape, the bitmap will also be clipped.
+
+Screenshot mode:
+
+* `DISABLED`: Screenshot support is disabled, no AndroidView used
+* `FULL`: Screenshot support is enabled, and the screenshot will contain background + content
+* `FULL_NOT_CLIPPED`: Same as `FULL`, but the screenshot won't be clipped to the `StoryEditor`'s
+  shape. This is useful when you specify a shape for the background, and you don't want the
+  screenshot to be clipped.
+* `CONTENT`: Screenshot support is enabled, and the screenshot will contain only the content without
+  the background
 
 Elements
 ----------------
