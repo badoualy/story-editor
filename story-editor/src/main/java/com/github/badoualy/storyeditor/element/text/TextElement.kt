@@ -101,8 +101,6 @@ class StoryTextElement(
     var colorSchemeType by mutableStateOf(colorSchemeType)
     var colorScheme by mutableStateOf(colorScheme)
 
-    override val clickableInPreviewMode = false
-
     override val transformation = StoryElementTransformation(
         initialSizeFraction = initialSizeFraction,
         scale = scale,

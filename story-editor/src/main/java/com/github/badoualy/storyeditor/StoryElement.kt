@@ -10,9 +10,6 @@ import kotlinx.collections.immutable.toImmutableList
 @Stable
 interface StoryElement {
 
-    /** true if clickable when [StoryEditorState.editMode] is false */
-    val clickableInPreviewMode: Boolean
-
     /**
      * Called when the element gains focus and should update its state to an edit mode.
      * By default, calling startEdit will disable scale/rotation transformations.
