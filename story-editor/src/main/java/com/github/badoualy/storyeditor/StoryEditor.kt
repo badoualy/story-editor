@@ -103,23 +103,23 @@ private fun StoryEditorContent(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Background
-        Box(
-            modifier = Modifier
-                .clip(shape)
-                .onSizeChanged { state.updateBackgroundSize(it) }
-                .pointerInput(state, state.editMode) {
-                    if (!state.editMode) return@pointerInput
-
-                    detectTapGestures {
-                        if (state.focusedElement != null) return@detectTapGestures
-                        if (state.draggedElement != null) return@detectTapGestures
-                        onClick()
-                    }
-                }
+        ScreenshotContent(
+            state = state,
+            layer = ScreenshotLayer.BACKGROUND,
+            modifier = Modifier.clip(shape)
         ) {
-            ScreenshotContent(
-                state = state,
-                layer = ScreenshotLayer.BACKGROUND
+            Box(
+                modifier = Modifier
+                    .onSizeChanged { state.updateBackgroundSize(it) }
+                    .pointerInput(state, state.editMode) {
+                        if (!state.editMode) return@pointerInput
+
+                        detectTapGestures {
+                            if (state.focusedElement != null) return@detectTapGestures
+                            if (state.draggedElement != null) return@detectTapGestures
+                            onClick()
+                        }
+                    }
             ) {
                 background()
             }
