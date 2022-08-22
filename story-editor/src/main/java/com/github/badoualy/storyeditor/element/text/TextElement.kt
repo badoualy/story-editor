@@ -2,6 +2,7 @@
 
 package com.github.badoualy.storyeditor.element.text
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -25,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -152,7 +155,7 @@ class StoryTextElement(
         }
     }
 
-    private fun textColor(): Color {
+    internal fun textColor(): Color {
         return when (colorSchemeType) {
             ColorSchemeType.BACKGROUND -> colorScheme.secondary
             ColorSchemeType.INVERTED -> colorScheme.primary
@@ -234,6 +237,8 @@ fun StoryEditorScope.TextElement(
                 }
             }
             val isEmpty by remember(element) { derivedStateOf { element.text.text.isEmpty() } }
+
+            val textColor by animateColorAsState(element.textColor())
             BasicTextField(
                 value = element.text,
                 onValueChange = { element.text = it },
@@ -246,13 +251,15 @@ fun StoryEditorScope.TextElement(
                             // Only draw cursor if input is empty
                             Modifier
                         } else {
+                            val backgroundColor by animateColorAsState(element.backgroundColor())
                             Modifier
-                                .background(element.backgroundColor(), elementShape)
+                                .clip(elementShape)
+                                .drawBehind { drawRect(color = backgroundColor) }
                                 .padding(elementPadding)
                         }
                     )
                     .elementFocus(element, focusRequester),
-                textStyle = element.textStyle(),
+                textStyle = element.textStyle().copy(color = textColor),
                 enabled = isEnabled,
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Words,
