@@ -3,6 +3,7 @@
 package com.github.badoualy.storyeditor
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -72,7 +73,7 @@ fun StoryEditor(
 ) {
     // When used in a Pager, without wrapping in a key, the size is never reported, investigate
     key(state) {
-        ScreenshotContent(
+        ScreenshotLayer(
             state = state,
             layer = ScreenshotLayer.EDITOR,
             modifier = modifier
@@ -103,7 +104,7 @@ private fun StoryEditorContent(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Background
-        ScreenshotContent(
+        ScreenshotLayer(
             state = state,
             layer = ScreenshotLayer.BACKGROUND,
             modifier = Modifier.clip(shape)
@@ -158,7 +159,7 @@ private fun StoryEditorContent(
         }
 
         // Elements
-        ScreenshotContent(
+        ScreenshotLayer(
             state = state,
             layer = ScreenshotLayer.ELEMENTS,
             modifier = Modifier.fillMaxSize()
@@ -249,6 +250,7 @@ private class StoryEditorScopeImpl(
                     }
                     waitingForInitialFocus = false
                 }
+                .focusable()
         }
     }
 

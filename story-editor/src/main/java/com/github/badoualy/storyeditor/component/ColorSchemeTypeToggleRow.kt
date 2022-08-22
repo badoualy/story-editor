@@ -41,12 +41,12 @@ fun ColorSchemeTypeToggleRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        colorSchemes.forEach { colors ->
-            key(colors) {
+        colorSchemes.forEach { colorScheme ->
+            key(colorScheme) {
                 ColorSchemeButton(
-                    colorScheme = colors,
-                    isSelected = currentColorScheme() == colors,
-                    onClick = { onColorSchemeClick(colors) }
+                    colorScheme = colorScheme,
+                    isSelected = currentColorScheme() == colorScheme,
+                    onClick = { onColorSchemeClick(colorScheme) }
                 )
             }
         }

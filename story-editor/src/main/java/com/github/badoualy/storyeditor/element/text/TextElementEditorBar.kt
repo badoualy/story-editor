@@ -39,7 +39,7 @@ internal fun TextElementEditorBar(
     currentAlignType: () -> AlignType,
     currentFontStyle: () -> StoryTextElement.FontStyle,
     currentColorSchemeType: () -> ColorSchemeType,
-    onSelectColors: (StoryElement.ColorScheme) -> Unit,
+    onSelectColorScheme: (StoryElement.ColorScheme) -> Unit,
     onAlignTypeClick: () -> Unit,
     onSelectFontStyle: (StoryTextElement.FontStyle) -> Unit,
     onColorSchemeTypeClick: () -> Unit,
@@ -96,7 +96,7 @@ internal fun TextElementEditorBar(
         ColorSchemeTypeToggleRow(
             colorSchemes = colorSchemes,
             currentColorScheme = currentColorScheme,
-            onColorSchemeClick = onSelectColors
+            onColorSchemeClick = onSelectColorScheme
         )
     }
 }

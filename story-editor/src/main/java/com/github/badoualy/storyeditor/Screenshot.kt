@@ -50,7 +50,7 @@ internal fun View.ListenToScreenshotRequest(
 }
 
 @Composable
-internal fun ScreenshotContent(
+internal fun ScreenshotLayer(
     state: StoryEditorState,
     layer: ScreenshotLayer,
     modifier: Modifier = Modifier,

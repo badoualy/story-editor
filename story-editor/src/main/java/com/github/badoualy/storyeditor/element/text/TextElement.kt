@@ -293,7 +293,7 @@ private fun TextElementEditorOverlay(
             onAlignTypeClick = element::toggleAlignType,
             onColorSchemeTypeClick = element::toggleColorSchemeType,
             onSelectFontStyle = { element.fontStyle = it },
-            onSelectColors = { element.colorScheme = it }
+            onSelectColorScheme = { element.colorScheme = it }
         )
     }
 }
