@@ -3,7 +3,6 @@
 package com.github.badoualy.storyeditor
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -250,7 +249,6 @@ private class StoryEditorScopeImpl(
                     }
                     waitingForInitialFocus = false
                 }
-                .focusable()
         }
     }
 

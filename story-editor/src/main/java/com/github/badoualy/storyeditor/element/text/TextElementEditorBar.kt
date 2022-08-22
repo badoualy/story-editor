@@ -6,17 +6,22 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumTouchTargetEnforcement
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -111,6 +116,7 @@ private fun FontStyleToggleRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Min)
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -119,6 +125,7 @@ private fun FontStyleToggleRow(
         fontStyles.forEach { fontStyle ->
             key(fontStyle) {
                 FontStyleToggle(
+                    modifier = Modifier.fillMaxHeight(),
                     fontStyle = fontStyle,
                     isSelected = currentFontStyle() == fontStyle,
                     onClick = { onSelectFontStyle(fontStyle) }
@@ -135,22 +142,26 @@ private fun FontStyleToggle(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(4.dp),
-        color = Color.Transparent,
-        contentColor = Color.White,
-        border = BorderStroke(
-            width = if (isSelected) 2.dp else 1.dp,
-            color = Color.White.copy(alpha = if (isSelected) 1f else 0.5f)
-        ),
-        onClick = onClick
-    ) {
-        Text(
-            text = fontStyle.name,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = fontStyle.textStyle,
-            fontSize = 12.sp
-        )
+    CompositionLocalProvider(LocalMinimumTouchTargetEnforcement provides false) {
+        Surface(
+            modifier = modifier,
+            shape = RoundedCornerShape(4.dp),
+            color = Color.Transparent,
+            contentColor = Color.White,
+            border = BorderStroke(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = Color.White.copy(alpha = if (isSelected) 1f else 0.5f)
+            ),
+            onClick = onClick
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = fontStyle.name,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = fontStyle.textStyle,
+                    fontSize = 12.sp
+                )
+            }
+        }
     }
 }
