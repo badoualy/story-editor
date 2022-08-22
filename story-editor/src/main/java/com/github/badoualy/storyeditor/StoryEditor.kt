@@ -9,9 +9,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -22,7 +20,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -40,7 +37,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -52,7 +48,6 @@ import com.github.badoualy.storyeditor.util.horizontalPadding
 import com.github.badoualy.storyeditor.util.verticalPadding
 import com.github.badoualy.storyeditor.util.withPrevious
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
 /*
@@ -125,19 +120,7 @@ private fun StoryEditorContent(
             }
         }
 
-        // Edit mode actions
         if (state.editMode) {
-            // Stop edit on keyboard manual close
-            val focusManager = LocalFocusManager.current
-            val isImeVisible by rememberUpdatedState(WindowInsets.isImeVisible)
-            if (isImeVisible) {
-                LaunchedEffect(Unit) {
-                    snapshotFlow { isImeVisible }
-                        .filter { !it && state.focusedElement != null }
-                        .collect { focusManager.clearFocus() }
-                }
-            }
-
             // Animate to/out of edit state
             val coroutineScope = rememberCoroutineScope()
             LaunchedEffect(Unit) {

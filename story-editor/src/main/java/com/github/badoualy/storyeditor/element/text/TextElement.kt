@@ -47,6 +47,7 @@ import com.github.badoualy.storyeditor.StoryEditorScope
 import com.github.badoualy.storyeditor.StoryElement
 import com.github.badoualy.storyeditor.StoryElementTransformation
 import com.github.badoualy.storyeditor.TransformableStoryElement
+import com.github.badoualy.storyeditor.util.clearFocusOnKeyboardClose
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -199,13 +200,14 @@ fun StoryEditorScope.TextElement(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Editor overlay when focused
-        val isFocused by remember(editorState, element) {
-            derivedStateOf {
-                editorState.focusedElement == element
-            }
-        }
+        val isFocused by remember(
+            editorState,
+            element
+        ) { derivedStateOf { editorState.focusedElement == element } }
         if (isFocused) {
             val focusManager = LocalFocusManager.current
+            focusManager.clearFocusOnKeyboardClose()
+
             TextElementEditorOverlay(
                 element = element,
                 onClickOutside = {
