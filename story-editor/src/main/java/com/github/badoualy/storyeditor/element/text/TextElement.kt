@@ -200,10 +200,11 @@ fun StoryEditorScope.TextElement(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Editor overlay when focused
-        val isFocused by remember(
-            editorState,
-            element
-        ) { derivedStateOf { editorState.focusedElement == element } }
+        val isFocused by remember(editorState, element) {
+            derivedStateOf {
+                editorState.focusedElement == element
+            }
+        }
         if (isFocused) {
             val focusManager = LocalFocusManager.current
             focusManager.clearFocusOnKeyboardClose()
