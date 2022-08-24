@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.filter
 
 @SuppressLint("ComposableNaming")
 @Composable
-fun FocusManager.clearFocusOnKeyboardClose() {
+internal fun FocusManager.clearFocusOnKeyboardClose() {
     val isImeVisible by rememberUpdatedState(WindowInsets.isImeVisible)
     LaunchedEffect(Unit) {
         snapshotFlow { isImeVisible }
