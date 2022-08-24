@@ -206,9 +206,10 @@ private class StoryEditorScopeImpl(
         addFocusable: Boolean
     ): Modifier {
         return composed(
-            "StoryEditorScopeImpl.elementFocus",
+            "StoryEditorScopeImpl.focusableElement",
             element,
             focusRequester,
+            addFocusable,
             editorState.editMode
         ) {
             if (!editorState.editMode) return@composed Modifier
