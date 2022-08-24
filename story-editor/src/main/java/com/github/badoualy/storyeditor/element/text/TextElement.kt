@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -48,6 +49,7 @@ import com.github.badoualy.storyeditor.StoryElement
 import com.github.badoualy.storyeditor.StoryElementTransformation
 import com.github.badoualy.storyeditor.TransformableStoryElement
 import com.github.badoualy.storyeditor.util.clearFocusOnKeyboardClose
+import com.github.badoualy.storyeditor.util.getLines
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -104,6 +106,8 @@ class StoryTextElement(
     var fontStyle by mutableStateOf(fontStyle)
     var colorSchemeType by mutableStateOf(colorSchemeType)
     var colorScheme by mutableStateOf(colorScheme)
+    var textLines: String = text
+        private set
 
     override val transformation = StoryElementTransformation(
         initialSizeFraction = initialSizeFraction,
@@ -129,6 +133,10 @@ class StoryTextElement(
         // Stop position override
         transformation.stopEdit()
         return true
+    }
+
+    internal fun updateLayoutResult(textLayoutResult: TextLayoutResult) {
+        textLines = textLayoutResult.getLines()
     }
 
     internal fun toggleAlignType() {
@@ -261,13 +269,14 @@ fun StoryEditorScope.TextElement(
                                 .padding(elementPadding)
                         }
                     )
-                    .elementFocus(element, focusRequester),
+                    .focusableElement(element, focusRequester, addFocusable = false),
                 textStyle = element.textStyle().copy(color = textColor),
                 enabled = isEnabled,
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Words,
                     imeAction = ImeAction.None
-                )
+                ),
+                onTextLayout = element::updateLayoutResult
             )
         }
     }

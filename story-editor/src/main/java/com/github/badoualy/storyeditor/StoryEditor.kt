@@ -3,6 +3,7 @@
 package com.github.badoualy.storyeditor
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -181,7 +182,11 @@ interface StoryEditorScope {
 
     val editorState: StoryEditorState
 
-    fun Modifier.elementFocus(element: StoryElement, focusRequester: FocusRequester): Modifier
+    fun Modifier.focusableElement(
+        element: StoryElement,
+        focusRequester: FocusRequester,
+        addFocusable: Boolean = true
+    ): Modifier
 
     fun Modifier.elementTransformation(
         element: TransformableStoryElement,
@@ -195,9 +200,10 @@ private class StoryEditorScopeImpl(
     override val editorState: StoryEditorState
 ) : StoryEditorScope {
 
-    override fun Modifier.elementFocus(
+    override fun Modifier.focusableElement(
         element: StoryElement,
-        focusRequester: FocusRequester
+        focusRequester: FocusRequester,
+        addFocusable: Boolean
     ): Modifier {
         return composed(
             "StoryEditorScopeImpl.elementFocus",
@@ -232,6 +238,7 @@ private class StoryEditorScopeImpl(
                     }
                     waitingForInitialFocus = false
                 }
+                .then(if (addFocusable) Modifier.focusable() else Modifier)
         }
     }
 
