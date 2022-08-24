@@ -14,5 +14,5 @@ fun TextLayoutResult.getLines(): String {
 
             currentIndex = lineEnd
         }
-    }
+    }.trim()
 }
