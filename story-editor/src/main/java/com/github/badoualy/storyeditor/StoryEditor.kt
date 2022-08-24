@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -225,6 +226,7 @@ private class StoryEditorScopeImpl(
                 }
             }
 
+            val keyboardController = LocalSoftwareKeyboardController.current
             Modifier
                 .focusRequester(focusRequester)
                 .onFocusChanged {
@@ -235,6 +237,7 @@ private class StoryEditorScopeImpl(
                     if (it.hasFocus) {
                         editorState.focusedElement = element
                     } else if (editorState.focusedElement == element) {
+                        keyboardController?.hide()
                         editorState.focusedElement = null
                     }
                     waitingForInitialFocus = false

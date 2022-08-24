@@ -53,7 +53,6 @@ import com.github.badoualy.storyeditor.StoryEditorScope
 import com.github.badoualy.storyeditor.StoryElement
 import com.github.badoualy.storyeditor.StoryElementTransformation
 import com.github.badoualy.storyeditor.TransformableStoryElement
-import com.github.badoualy.storyeditor.util.clearFocusOnKeyboardClose
 import com.github.badoualy.storyeditor.util.getLines
 import com.github.badoualy.storyeditor.util.plus
 import com.github.badoualy.storyeditor.util.toDpSize
@@ -138,6 +137,7 @@ class StoryTextElement(
         if (text.text.isBlank()) return false
 
         // Stop position override
+        text = text.copy(text = text.text.trim())
         transformation.stopEdit()
         return true
     }
@@ -223,8 +223,6 @@ fun StoryEditorScope.TextElement(
         }
         if (isFocused) {
             val focusManager = LocalFocusManager.current
-            focusManager.clearFocusOnKeyboardClose()
-
             TextElementEditorOverlay(
                 element = element,
                 onClickOutside = {
