@@ -52,10 +52,6 @@ import com.github.badoualy.storyeditor.util.withPrevious
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 
-/*
-    TODO:
-        * when dragging, exclude dynamically from gesture navigation the pointer region
- */
 @Composable
 fun StoryEditor(
     elements: ImmutableList<StoryElement>,
@@ -211,14 +207,14 @@ private class StoryEditorScopeImpl(
             element,
             focusRequester,
             addFocusable,
+            editorState,
             editorState.editMode
         ) {
             if (!editorState.editMode) return@composed Modifier
 
             // Check for initial focus when entering composition
             // Setting hasFocus = true before entering composition doesn't work, because onFocusChanged is called before :/
-            val requestInitialFocus =
-                remember(editorState) { editorState.focusedElement == element }
+            val requestInitialFocus = remember { editorState.focusedElement == element }
             var waitingForInitialFocus by remember { mutableStateOf(requestInitialFocus) }
             if (requestInitialFocus) {
                 LaunchedEffect(Unit) {
