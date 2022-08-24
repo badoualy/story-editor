@@ -1,4 +1,5 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
+@file:OptIn(ExperimentalTextApi::class)
 
 package com.github.badoualy.storyeditor.element.text
 
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -26,13 +26,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -41,7 +43,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.badoualy.storyeditor.StoryEditorScope
@@ -50,6 +55,8 @@ import com.github.badoualy.storyeditor.StoryElementTransformation
 import com.github.badoualy.storyeditor.TransformableStoryElement
 import com.github.badoualy.storyeditor.util.clearFocusOnKeyboardClose
 import com.github.badoualy.storyeditor.util.getLines
+import com.github.badoualy.storyeditor.util.plus
+import com.github.badoualy.storyeditor.util.toDpSize
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -57,7 +64,7 @@ object StoryTextElementDefaults {
 
     val HitboxPadding = PaddingValues(50.dp)
     val Padding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-    val Shape = RoundedCornerShape(4.dp)
+    val BackgroundRadius = 4.dp
     val EditPositionFraction = Offset(0.15f, 0.15f)
 
     object FontStyle {
@@ -202,7 +209,8 @@ fun StoryEditorScope.TextElement(
     modifier: Modifier = Modifier,
     hitboxPadding: PaddingValues = StoryTextElementDefaults.HitboxPadding,
     elementPadding: PaddingValues = StoryTextElementDefaults.Padding,
-    elementShape: RoundedCornerShape = StoryTextElementDefaults.Shape,
+    backgroundRadius: Dp = StoryTextElementDefaults.BackgroundRadius,
+    lineSpacingExtra: TextUnit = 10.sp,
     fontStyles: ImmutableList<StoryTextElement.FontStyle> = StoryTextElementDefaults.FontStyle.DefaultList,
     colorSchemes: ImmutableList<StoryElement.ColorScheme> = StoryElement.ColorScheme.DefaultList,
 ) {
@@ -248,8 +256,18 @@ fun StoryEditorScope.TextElement(
                 }
             }
             val isEmpty by remember(element) { derivedStateOf { element.text.text.isEmpty() } }
+            var linesBounds by remember { mutableStateOf(listOf<Rect>()) }
 
             val textColor by animateColorAsState(element.textColor())
+            val textStyle = element.textStyle()
+            val mergedTextStyle = textStyle.copy(
+                color = textColor,
+                lineHeight = (textStyle.fontSize.value + lineSpacingExtra.value).sp,
+                lineHeightStyle = LineHeightStyle(
+                    alignment = LineHeightStyle.Alignment.Bottom,
+                    trim = LineHeightStyle.Trim.Both
+                )
+            )
             BasicTextField(
                 value = element.text,
                 onValueChange = { element.text = it },
@@ -264,19 +282,47 @@ fun StoryEditorScope.TextElement(
                         } else {
                             val backgroundColor by animateColorAsState(element.backgroundColor())
                             Modifier
-                                .clip(elementShape)
-                                .drawBehind { drawRect(color = backgroundColor) }
+                                .drawBehind {
+                                    val paddingSize = elementPadding
+                                        .toDpSize()
+                                        .toSize()
+                                    val cornerRadius = CornerRadius(backgroundRadius.toPx())
+
+                                    linesBounds.forEach { lineBounds ->
+                                        drawRoundRect(
+                                            color = backgroundColor,
+                                            topLeft = lineBounds.topLeft,
+                                            size = lineBounds.size + paddingSize,
+                                            cornerRadius = cornerRadius
+                                        )
+                                    }
+                                }
                                 .padding(elementPadding)
                         }
                     )
                     .focusableElement(element, focusRequester, addFocusable = false),
-                textStyle = element.textStyle().copy(color = textColor),
+                textStyle = mergedTextStyle,
                 enabled = isEnabled,
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.Words,
                     imeAction = ImeAction.None
                 ),
-                onTextLayout = element::updateLayoutResult
+                onTextLayout = {
+                    element.updateLayoutResult(it)
+
+                    // Build bounding rect for each line
+                    // The line height will have the standard value for the first line
+                    val lineHeight = it.multiParagraph.getLineHeight(0)
+                    linesBounds = List(it.lineCount) { line ->
+                        val bottom = it.getLineBottom(line)
+                        Rect(
+                            left = it.getLineLeft(line),
+                            top = bottom - lineHeight,
+                            right = it.getLineRight(line),
+                            bottom = bottom
+                        )
+                    }
+                }
             )
         }
     }

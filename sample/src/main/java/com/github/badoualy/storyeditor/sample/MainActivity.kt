@@ -107,7 +107,7 @@ private fun Content(
     val elements = remember {
         mutableStateListOf(
             StoryTextElement(
-                text = "Kyoto",
+                text = "Kiyomizudera\nKyoto",
                 positionFraction = Offset(0.2f, 0.2f)
             )
         )
