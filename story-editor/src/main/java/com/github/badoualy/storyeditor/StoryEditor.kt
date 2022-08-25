@@ -20,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -35,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -43,14 +43,15 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
+import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.zIndex
 import com.github.badoualy.storyeditor.component.EditorDeleteButton
 import com.github.badoualy.storyeditor.util.horizontalPadding
 import com.github.badoualy.storyeditor.util.verticalPadding
 import com.github.badoualy.storyeditor.util.withPrevious
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.launch
 
 @Composable
 fun StoryEditor(
@@ -108,8 +109,8 @@ private fun StoryEditorContent(
                         if (!state.editMode) return@pointerInput
 
                         detectTapGestures {
-                            if (state.focusedElement != null) return@detectTapGestures
                             if (state.draggedElement != null) return@detectTapGestures
+                            if (state.focusedElement != null) return@detectTapGestures
                             onClick()
                         }
                     }
@@ -120,20 +121,15 @@ private fun StoryEditorContent(
 
         if (state.editMode) {
             // Animate to/out of edit state
-            val coroutineScope = rememberCoroutineScope()
             LaunchedEffect(Unit) {
                 snapshotFlow { state.focusedElement }
                     .withPrevious()
                     .collect { (previous, value) ->
                         if (previous != null && !previous.stopEdit()) {
-                            coroutineScope.launch {
-                                onDeleteElement(previous)
-                            }
+                            onDeleteElement(previous)
                         }
 
-                        coroutineScope.launch {
-                            value?.startEdit()
-                        }
+                        value?.startEdit()
                     }
             }
         }
@@ -232,11 +228,11 @@ private class StoryEditorScopeImpl(
                     }
                     if (it.hasFocus) {
                         editorState.focusedElement = element
-                    } else if (editorState.focusedElement == element) {
+                        waitingForInitialFocus = false
+                    } else if (editorState.focusedElement === element) {
                         keyboardController?.hide()
                         editorState.focusedElement = null
                     }
-                    waitingForInitialFocus = false
                 }
                 .then(if (addFocusable) Modifier.focusable() else Modifier)
         }
@@ -251,18 +247,7 @@ private class StoryEditorScopeImpl(
         val transformation = element.transformation
         return this
             .detectAndApplyTransformation(element)
-            .dragListener(element)
-            .pointerInput(clickEnabled) {
-                if (!clickEnabled) return@pointerInput
-
-                detectTapGestures {
-                    if (editorState.draggedElement != null) return@detectTapGestures
-                    if (editorState.focusedElement != null) return@detectTapGestures
-                    if (!transformation.gesturesEnabled) return@detectTapGestures
-
-                    onClick()
-                }
-            }
+            .dragTapListener(element = element, onTap = onClick)
             .hitbox(transformation = transformation, paddingValues = hitboxPadding)
     }
 
@@ -344,7 +329,12 @@ private class StoryEditorScopeImpl(
         }
     }
 
-    private fun Modifier.dragListener(element: TransformableStoryElement): Modifier {
+    private fun Modifier.dragTapListener(
+        element: TransformableStoryElement,
+        onTap: () -> Unit,
+        dragThreshold: Int = 50
+    ): Modifier {
+        val dragThresholdSquare = dragThreshold * dragThreshold
         return this.pointerInput(
             editorState,
             editorState.editMode,
@@ -357,28 +347,46 @@ private class StoryEditorScopeImpl(
             // Notify gesture end events
             forEachGesture {
                 awaitPointerEventScope {
-                    awaitFirstDown(requireUnconsumed = false)
+                    val down = awaitFirstDown(requireUnconsumed = false)
                     if (!transformation.gesturesEnabled) return@awaitPointerEventScope
 
                     do {
                         val event = awaitPointerEvent()
 
                         // Only allow 1 element to be dragged at the same time
-                        if (editorState.draggedElement.let { it != null && it != element }) {
+                        if (editorState.draggedElement.let { it != null && it !== element }) {
                             return@awaitPointerEventScope
                         }
+                        // No drag while an element is focused
                         if (editorState.focusedElement != null) {
                             return@awaitPointerEventScope
                         }
-                        if (event.changes.any { it.previousPosition != it.position }) {
+
+                        // Detect taps
+                        val isTapEvent = editorState.draggedElement == null &&
+                                event.changes.fastAll { it.changedToUp() } &&
+                                event.changes[0].uptimeMillis - down.uptimeMillis < 500
+                        if (isTapEvent) {
+                            onTap()
+                            return@awaitPointerEventScope
+                        }
+
+                        // Detect drags beyond a threshold
+                        val movedBeyondThreshold = event.changes
+                            .fastMap { (down.position - it.position).getDistanceSquared() }
+                            .fastAny { it > dragThresholdSquare }
+                        if (movedBeyondThreshold) {
                             editorState.draggedElement = element
                         }
 
-                        val pointerPosition = event.changes.lastOrNull()?.position
-                        editorState.pointerPosition = if (pointerPosition != null) {
-                            pointerPosition + transformation.scaledHitboxPosition(editorState.editorSize)
-                        } else {
-                            Offset.Unspecified
+                        if (editorState.draggedElement != null) {
+                            // Update pointer position
+                            val pointerPosition = event.changes.lastOrNull()?.position
+                            editorState.pointerPosition = if (pointerPosition != null) {
+                                pointerPosition + transformation.scaledHitboxPosition(editorState.editorSize)
+                            } else {
+                                Offset.Unspecified
+                            }
                         }
 
                         val canceled = event.changes.fastAny { it.isConsumed }
