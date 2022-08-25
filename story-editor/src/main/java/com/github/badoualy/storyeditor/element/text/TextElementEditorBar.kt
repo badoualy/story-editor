@@ -47,6 +47,7 @@ internal fun TextElementEditorBar(
     modifier: Modifier = Modifier
 ) {
     Column(
+        modifier = modifier.padding(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         // Align / Colors type / Font style

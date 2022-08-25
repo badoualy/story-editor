@@ -10,8 +10,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -50,11 +51,13 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.badoualy.storyeditor.StoryEditorScope
+import com.github.badoualy.storyeditor.StoryEditorState.ScreenshotMode
 import com.github.badoualy.storyeditor.StoryElement
 import com.github.badoualy.storyeditor.StoryElementTransformation
 import com.github.badoualy.storyeditor.TransformableStoryElement
 import com.github.badoualy.storyeditor.util.clearFocusOnKeyboardClose
 import com.github.badoualy.storyeditor.util.getLines
+import com.github.badoualy.storyeditor.util.imePadding
 import com.github.badoualy.storyeditor.util.plus
 import com.github.badoualy.storyeditor.util.toDpSize
 import kotlinx.collections.immutable.ImmutableList
@@ -228,6 +231,7 @@ fun StoryEditorScope.TextElement(
 
             TextElementEditorOverlay(
                 element = element,
+                isScreenshotModeEnabled = editorState.screenshotMode != ScreenshotMode.DISABLED,
                 onClickOutside = {
                     focusManager.clearFocus()
                 },
@@ -332,6 +336,7 @@ fun StoryEditorScope.TextElement(
 @Composable
 private fun TextElementEditorOverlay(
     element: StoryTextElement,
+    isScreenshotModeEnabled: Boolean,
     onClickOutside: () -> Unit,
     modifier: Modifier = Modifier,
     fontStyles: ImmutableList<StoryTextElement.FontStyle>,
@@ -341,7 +346,7 @@ private fun TextElementEditorOverlay(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.4f))
-            .imePadding()
+            .imePadding(consume = WindowInsets.navigationBars.takeIf { isScreenshotModeEnabled })
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
