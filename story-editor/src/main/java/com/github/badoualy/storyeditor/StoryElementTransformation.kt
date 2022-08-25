@@ -70,7 +70,7 @@ open class StoryElementTransformation(
         private set
 
     /** Unscaled element size in fraction (percent) of editor's size */
-    var sizeFraction: Size by mutableStateOf(Size.Zero)
+    var sizeFraction: Size by mutableStateOf(initialSizeFraction ?: Size.Zero)
         private set
 
     /** Unscaled element size in dp */
