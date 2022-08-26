@@ -222,7 +222,7 @@ fun StoryEditorScope.TextElement(
         // Editor overlay when focused
         val isFocused by remember(editorState, element) {
             derivedStateOf {
-                editorState.focusedElement == element
+                editorState.focusedElement === element
             }
         }
         if (isFocused) {
@@ -305,7 +305,7 @@ fun StoryEditorScope.TextElement(
                                 .padding(elementPadding)
                         }
                     )
-                    .focusableElement(element, focusRequester, addFocusable = false),
+                    .focusableElement(element, focusRequester, skipFocusable = true),
                 textStyle = mergedTextStyle,
                 enabled = isEnabled,
                 keyboardOptions = KeyboardOptions(

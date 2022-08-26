@@ -38,6 +38,7 @@ import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
@@ -125,7 +126,7 @@ private fun StoryEditorContent(
                 snapshotFlow { state.focusedElement }
                     .withPrevious()
                     .collect { (previous, value) ->
-                        if (previous != null && !previous.stopEdit()) {
+                        if (previous?.stopEdit() == false) {
                             onDeleteElement(previous)
                         }
 
@@ -144,7 +145,11 @@ private fun StoryEditorContent(
             with(scope) {
                 elements.forEach { element ->
                     key(element) {
-                        val isFocusedElement by remember(state) { derivedStateOf { state.focusedElement == element } }
+                        val isFocusedElement by remember(state) {
+                            derivedStateOf {
+                                state.focusedElement === element
+                            }
+                        }
 
                         Box(
                             // Make sure the focus element is on top of others
@@ -178,7 +183,7 @@ interface StoryEditorScope {
     fun Modifier.focusableElement(
         element: StoryElement,
         focusRequester: FocusRequester,
-        addFocusable: Boolean = true
+        skipFocusable: Boolean = false
     ): Modifier
 
     fun Modifier.elementTransformation(
@@ -196,45 +201,58 @@ private class StoryEditorScopeImpl(
     override fun Modifier.focusableElement(
         element: StoryElement,
         focusRequester: FocusRequester,
-        addFocusable: Boolean
+        skipFocusable: Boolean
     ): Modifier {
         return composed(
             "StoryEditorScopeImpl.focusableElement",
             element,
             focusRequester,
-            addFocusable,
+            skipFocusable,
             editorState,
             editorState.editMode
         ) {
             if (!editorState.editMode) return@composed Modifier
 
-            // Check for initial focus when entering composition
-            // Setting hasFocus = true before entering composition doesn't work, because onFocusChanged is called before :/
-            val requestInitialFocus = remember { editorState.focusedElement == element }
-            var waitingForInitialFocus by remember { mutableStateOf(requestInitialFocus) }
-            if (requestInitialFocus) {
-                LaunchedEffect(Unit) {
+            val focusManager = LocalFocusManager.current
+            val keyboardController = LocalSoftwareKeyboardController.current
+
+            val isFocused by remember { derivedStateOf { editorState.focusedElement === element } }
+            var localFocusState by remember { mutableStateOf(false) }
+            var waitingForFocus by remember { mutableStateOf(isFocused) }
+            LaunchedEffect(isFocused) {
+                // no-op, view was focused from a click and local state is already set
+                if (localFocusState == isFocused) return@LaunchedEffect
+
+                if (isFocused) {
+                    waitingForFocus = true
                     focusRequester.requestFocus()
+                } else {
+                    waitingForFocus = false
+                    focusManager.clearFocus()
                 }
             }
 
-            val keyboardController = LocalSoftwareKeyboardController.current
             Modifier
                 .focusRequester(focusRequester)
                 .onFocusChanged {
-                    if (waitingForInitialFocus && !it.hasFocus) {
-                        // Ignore event if we didn't have initial focus yet
+                    if (waitingForFocus && !it.hasFocus) {
+                        // Ignore event if we're waiting for focus
+                        // This can happen when the element enters composition,
+                        // onFocusedChanged will be called once with hasFocus=false
                         return@onFocusChanged
                     }
+
+                    localFocusState = it.hasFocus
                     if (it.hasFocus) {
+                        // The view can be focused from a click, make sure that the property is set
                         editorState.focusedElement = element
-                        waitingForInitialFocus = false
+                        waitingForFocus = false
                     } else if (editorState.focusedElement === element) {
-                        keyboardController?.hide()
                         editorState.focusedElement = null
+                        keyboardController?.hide()
                     }
                 }
-                .then(if (addFocusable) Modifier.focusable() else Modifier)
+                .then(if (!skipFocusable) Modifier.focusable() else Modifier)
         }
     }
 
@@ -271,7 +289,7 @@ private class StoryEditorScopeImpl(
                 if (!editorState.editMode) return@pointerInput
 
                 detectTransformGestures { _, pan, zoom, rotation ->
-                    if (editorState.draggedElement != element) return@detectTransformGestures
+                    if (editorState.draggedElement !== element) return@detectTransformGestures
                     if (editorState.focusedElement != null) return@detectTransformGestures
                     if (!transformation.gesturesEnabled) return@detectTransformGestures
 
@@ -289,6 +307,75 @@ private class StoryEditorScopeImpl(
                     )
                 }
             }
+    }
+
+    private fun Modifier.dragTapListener(
+        element: TransformableStoryElement,
+        onTap: () -> Unit,
+        dragThreshold: Int = 50
+    ): Modifier {
+        val dragThresholdSquare = dragThreshold * dragThreshold
+        return this.pointerInput(
+            editorState,
+            editorState.editMode,
+            element
+        ) {
+            if (!editorState.editMode) return@pointerInput
+            val transformation = element.transformation
+
+            forEachGesture {
+                awaitPointerEventScope {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    if (!transformation.gesturesEnabled) return@awaitPointerEventScope
+
+                    do {
+                        val event = awaitPointerEvent()
+
+                        // Only allow 1 element to be dragged at the same time
+                        if (editorState.draggedElement.let { it != null && it !== element }) {
+                            return@awaitPointerEventScope
+                        }
+                        // No drag while an element is focused
+                        if (editorState.focusedElement != null) {
+                            return@awaitPointerEventScope
+                        }
+
+                        // Detect taps
+                        val isTapEvent = editorState.draggedElement == null &&
+                                event.changes.fastAll { it.changedToUp() } &&
+                                event.changes[0].uptimeMillis - down.uptimeMillis < 500
+                        if (isTapEvent) {
+                            onTap()
+                            return@awaitPointerEventScope
+                        }
+
+                        // Detect drags beyond a threshold
+                        val movedBeyondThreshold = event.changes
+                            .fastMap { (down.position - it.position).getDistanceSquared() }
+                            .fastAny { it > dragThresholdSquare }
+                        if (movedBeyondThreshold) {
+                            editorState.draggedElement = element
+                        }
+
+                        // Update pointer position
+                        if (editorState.draggedElement != null) {
+                            val pointerPosition = event.changes.lastOrNull()?.position
+                            editorState.pointerPosition = if (pointerPosition != null) {
+                                pointerPosition + transformation.scaledHitboxPosition(editorState.editorSize)
+                            } else {
+                                Offset.Unspecified
+                            }
+                        }
+
+                        val canceled = event.changes.fastAny { it.isConsumed }
+                    } while (!canceled && event.changes.fastAny { it.pressed })
+
+                    editorState.draggedElement = null
+                    // Important, reset position AFTER setting dragged element to null
+                    editorState.pointerPosition = Offset.Unspecified
+                }
+            }
+        }
     }
 
     private fun Modifier.hitbox(
@@ -326,77 +413,6 @@ private class StoryEditorScopeImpl(
                         editorSize = editorState.editorSize
                     )
                 }
-        }
-    }
-
-    private fun Modifier.dragTapListener(
-        element: TransformableStoryElement,
-        onTap: () -> Unit,
-        dragThreshold: Int = 50
-    ): Modifier {
-        val dragThresholdSquare = dragThreshold * dragThreshold
-        return this.pointerInput(
-            editorState,
-            editorState.editMode,
-            element
-        ) {
-            if (!editorState.editMode) return@pointerInput
-            val transformation = element.transformation
-
-            // see https://stackoverflow.com/a/68689713/1014223
-            // Notify gesture end events
-            forEachGesture {
-                awaitPointerEventScope {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    if (!transformation.gesturesEnabled) return@awaitPointerEventScope
-
-                    do {
-                        val event = awaitPointerEvent()
-
-                        // Only allow 1 element to be dragged at the same time
-                        if (editorState.draggedElement.let { it != null && it !== element }) {
-                            return@awaitPointerEventScope
-                        }
-                        // No drag while an element is focused
-                        if (editorState.focusedElement != null) {
-                            return@awaitPointerEventScope
-                        }
-
-                        // Detect taps
-                        val isTapEvent = editorState.draggedElement == null &&
-                                event.changes.fastAll { it.changedToUp() } &&
-                                event.changes[0].uptimeMillis - down.uptimeMillis < 500
-                        if (isTapEvent) {
-                            onTap()
-                            return@awaitPointerEventScope
-                        }
-
-                        // Detect drags beyond a threshold
-                        val movedBeyondThreshold = event.changes
-                            .fastMap { (down.position - it.position).getDistanceSquared() }
-                            .fastAny { it > dragThresholdSquare }
-                        if (movedBeyondThreshold) {
-                            editorState.draggedElement = element
-                        }
-
-                        if (editorState.draggedElement != null) {
-                            // Update pointer position
-                            val pointerPosition = event.changes.lastOrNull()?.position
-                            editorState.pointerPosition = if (pointerPosition != null) {
-                                pointerPosition + transformation.scaledHitboxPosition(editorState.editorSize)
-                            } else {
-                                Offset.Unspecified
-                            }
-                        }
-
-                        val canceled = event.changes.fastAny { it.isConsumed }
-                    } while (!canceled && event.changes.fastAny { it.pressed })
-
-                    editorState.draggedElement = null
-                    // Important, reset position AFTER setting dragged element to null
-                    editorState.pointerPosition = Offset.Unspecified
-                }
-            }
         }
     }
 }

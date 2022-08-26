@@ -131,7 +131,7 @@ class StoryEditorState(
     }
 
     fun isFocusable(element: StoryElement): Boolean {
-        return editMode && (focusedElement == null || focusedElement == element) && draggedElement == null
+        return editMode && (focusedElement == null || focusedElement === element) && draggedElement == null
     }
 
     internal fun updateBackgroundSize(size: IntSize) {

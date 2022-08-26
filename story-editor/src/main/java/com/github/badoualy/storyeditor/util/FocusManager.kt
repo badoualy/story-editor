@@ -1,6 +1,7 @@
 package com.github.badoualy.storyeditor.util
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.runtime.Composable
@@ -11,6 +12,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.focus.FocusManager
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.onEach
 
 @SuppressLint("ComposableNaming")
 @Composable
@@ -18,8 +20,9 @@ fun FocusManager.clearFocusOnKeyboardClose() {
     val isImeVisible by rememberUpdatedState(WindowInsets.isImeVisible)
     LaunchedEffect(Unit) {
         snapshotFlow { isImeVisible }
+            .onEach { Log.e("Yann", "KEYBOARD $it") }
             .dropWhile { !it } // Wait for a first keyboard open event
             .filter { !it }
-            .collect { clearFocus() }
+            .collect { }
     }
 }
