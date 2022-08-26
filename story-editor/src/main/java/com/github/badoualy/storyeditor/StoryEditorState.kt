@@ -50,9 +50,22 @@ class StoryEditorState(
     var editorSize by mutableStateOf(IntSize.Zero)
         private set
 
+    /**
+     * Element currently focused for edition.
+     * When an element is focused, other elements can't be interacted with.
+     */
     var focusedElement by mutableStateOf<StoryElement?>(null)
+
+    /**
+     * Element currently dragged. Only one element can be drag/interacted with at the same time.
+     */
     var draggedElement by mutableStateOf<StoryElement?>(null)
         internal set
+
+    /**
+     * Pointer position while [draggedElement] is not null.
+     * Reset to [Offset.Unspecified] when drag is finished.
+     */
     internal var pointerPosition: Offset by mutableStateOf(Offset.Unspecified)
 
     /**
