@@ -22,6 +22,7 @@ import com.github.badoualy.storyeditor.util.rotateZ
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 
 /**
  * Holds current transformation state for the element (position, scale, rotation, ...).
@@ -96,8 +97,13 @@ open class StoryElementTransformation(
         get() = sizeDp * displayScale
 
     /** Scaled element hitbox (with padding) size in px */
-    private val scaledHitboxSize: Size
+    val scaledHitboxSize: Size
         get() = hitboxSize.toSize() * displayScale
+
+    private val isAnimating: Boolean
+        get() = _displayScale.isRunning || _displayPositionFraction.isRunning || _displayRotation.isRunning
+    internal var isOverridingDisplayState = false
+        private set
 
     /**
      * Override currently displayed transformation state to the given values
@@ -110,11 +116,16 @@ open class StoryElementTransformation(
         positionFraction: Offset,
         animate: Boolean
     ) {
-        if (animate) {
-            coroutineScope {
-                launch { _displayScale.animateTo(scale) }
-                launch { _displayRotation.animateTo(rotation) }
-                launch { _displayPositionFraction.animateTo(positionFraction) }
+        // If size is zero, it means no draw phase passed, no need to animate
+        if (animate && size != IntSize.Zero) {
+            // Might get cancelled if animateTo is called elsewhere while running
+            try {
+                coroutineScope {
+                    launch { _displayScale.animateTo(scale) }
+                    launch { _displayRotation.animateTo(rotation) }
+                    launch { _displayPositionFraction.animateTo(positionFraction) }
+                }
+            } catch (e: Throwable) {
             }
         } else {
             _displayScale.snapTo(scale)
@@ -141,6 +152,7 @@ open class StoryElementTransformation(
      */
     suspend fun startEdit(editPositionFraction: Offset) {
         // Disable scale/rotation and override position to given edit position
+        isOverridingDisplayState = true
         gesturesEnabled = false
         setDisplayState(
             scale = 1f,
@@ -158,6 +170,7 @@ open class StoryElementTransformation(
         // Stop position override
         resetDisplayState(animate = true)
         gesturesEnabled = true
+        isOverridingDisplayState = false
     }
 
     internal fun updateSize(
@@ -181,7 +194,7 @@ open class StoryElementTransformation(
             val newValue = requestedRatioSize.width / ratioWidth
 
             scale = newValue
-            runBlocking { _displayScale.snapTo(newValue) }
+            snapDisplayValue { _displayScale.snapTo(newValue) }
         }
     }
 
@@ -197,12 +210,12 @@ open class StoryElementTransformation(
         }
 
         this.scale = newValue
-        runBlocking { _displayScale.snapTo(newValue) }
+        snapDisplayValue { _displayScale.snapTo(newValue) }
     }
 
     internal fun updateRotation(rotation: Float) {
         this.rotation = rotation
-        runBlocking { _displayRotation.snapTo(rotation) }
+        snapDisplayValue { _displayRotation.snapTo(rotation) }
     }
 
     internal fun updatePosition(
@@ -218,7 +231,7 @@ open class StoryElementTransformation(
             .pxToFraction(editorSize)
 
         positionFraction = newValue
-        runBlocking { _displayPositionFraction.snapTo(newValue) }
+        snapDisplayValue { _displayPositionFraction.snapTo(newValue) }
     }
 
     /**
@@ -266,5 +279,18 @@ open class StoryElementTransformation(
 
     private fun Offset.pxToFraction(editorSize: IntSize): Offset {
         return Offset(x = x / editorSize.width, y = y / editorSize.height)
+    }
+
+    private inline fun snapDisplayValue(crossinline block: suspend () -> Unit) {
+        if (isAnimating) return
+        if (isOverridingDisplayState) return
+
+        runCatching {
+            runBlocking {
+                withTimeout(100) {
+                    block()
+                }
+            }
+        }
     }
 }

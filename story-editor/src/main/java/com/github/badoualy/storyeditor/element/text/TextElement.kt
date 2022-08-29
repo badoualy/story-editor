@@ -138,10 +138,10 @@ class StoryTextElement(
     }
 
     override suspend fun stopEdit(): Boolean {
+        text = text.copy(text = text.text.trim())
         if (text.text.isBlank()) return false
 
         // Stop position override
-        text = text.copy(text = text.text.trim())
         transformation.stopEdit()
         return true
     }

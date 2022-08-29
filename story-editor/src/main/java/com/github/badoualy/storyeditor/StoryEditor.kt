@@ -51,7 +51,6 @@ import androidx.compose.ui.zIndex
 import com.github.badoualy.storyeditor.component.EditorDeleteButton
 import com.github.badoualy.storyeditor.util.horizontalPadding
 import com.github.badoualy.storyeditor.util.verticalPadding
-import com.github.badoualy.storyeditor.util.withPrevious
 import kotlinx.collections.immutable.ImmutableList
 
 @Composable
@@ -117,21 +116,6 @@ private fun StoryEditorContent(
                     }
             ) {
                 background()
-            }
-        }
-
-        if (state.editMode) {
-            // Animate to/out of edit state
-            LaunchedEffect(Unit) {
-                snapshotFlow { state.focusedElement }
-                    .withPrevious()
-                    .collect { (previous, value) ->
-                        if (previous?.stopEdit() == false) {
-                            onDeleteElement(previous)
-                        }
-
-                        value?.startEdit()
-                    }
             }
         }
 
@@ -219,17 +203,25 @@ private class StoryEditorScopeImpl(
             val isFocused by remember { derivedStateOf { editorState.focusedElement === element } }
             var localFocusState by remember { mutableStateOf(false) }
             var waitingForFocus by remember { mutableStateOf(isFocused) }
-            LaunchedEffect(isFocused) {
-                // no-op, view was focused from a click and local state is already set
-                if (localFocusState == isFocused) return@LaunchedEffect
+            LaunchedEffect(Unit) {
+                snapshotFlow { isFocused }
+                    .collect { isFocused ->
+                        if (localFocusState != isFocused) {
+                            if (isFocused) {
+                                waitingForFocus = true
+                                focusRequester.requestFocus()
+                            } else {
+                                waitingForFocus = false
+                                focusManager.clearFocus()
+                            }
+                        }
 
-                if (isFocused) {
-                    waitingForFocus = true
-                    focusRequester.requestFocus()
-                } else {
-                    waitingForFocus = false
-                    focusManager.clearFocus()
-                }
+                        if (isFocused) {
+                            element.startEdit()
+                        } else {
+                            element.stopEdit()
+                        }
+                    }
             }
 
             Modifier
