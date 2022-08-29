@@ -18,7 +18,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -34,6 +37,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextLayoutResult
@@ -260,76 +264,105 @@ fun StoryEditorScope.TextElement(
                     editorState.isFocusable(element)
                 }
             }
-            val isEmpty by remember(element) { derivedStateOf { element.text.text.isEmpty() } }
-            var linesBounds by remember { mutableStateOf(listOf<Rect>()) }
 
-            val textColor by animateColorAsState(element.textColor())
-            val textStyle = element.textStyle()
-            val mergedTextStyle = textStyle.copy(
-                color = textColor,
-                lineHeight = (textStyle.fontSize.value + lineSpacingExtra.value).sp,
-                lineHeightStyle = LineHeightStyle(
-                    alignment = LineHeightStyle.Alignment.Bottom,
-                    trim = LineHeightStyle.Trim.Both
-                )
-            )
-            BasicTextField(
-                value = element.text,
-                onValueChange = { element.text = it },
-                modifier = Modifier
-                    .width(IntrinsicSize.Min)
-                    // Cursor thickness is 2.dp
-                    .widthIn(min = 2.dp)
-                    .then(
-                        if (isEmpty) {
-                            // Only draw cursor if input is empty
-                            Modifier
-                        } else {
-                            val backgroundColor by animateColorAsState(element.backgroundColor())
-                            Modifier
-                                .drawBehind {
-                                    val paddingSize = elementPadding
-                                        .toDpSize()
-                                        .toSize()
-                                    val cornerRadius = CornerRadius(backgroundRadius.toPx())
-
-                                    linesBounds.forEach { lineBounds ->
-                                        drawRoundRect(
-                                            color = backgroundColor,
-                                            topLeft = lineBounds.topLeft,
-                                            size = lineBounds.size + paddingSize,
-                                            cornerRadius = cornerRadius
-                                        )
-                                    }
-                                }
-                                .padding(elementPadding)
-                        }
-                    )
-                    .focusableElement(element, focusRequester, skipFocusable = true),
-                textStyle = mergedTextStyle,
+            TextElementTextField(
+                element = element,
                 enabled = isEnabled,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Words,
-                    imeAction = ImeAction.None
-                ),
-                onTextLayout = {
-                    element.updateLayoutResult(it)
-
-                    // Build bounding rect for each line
-                    // The line height will have the standard value for the first line
-                    val lineHeight = it.multiParagraph.getLineHeight(0)
-                    linesBounds = List(it.lineCount) { line ->
-                        val bottom = it.getLineBottom(line)
-                        Rect(
-                            left = it.getLineLeft(line),
-                            top = bottom - lineHeight,
-                            right = it.getLineRight(line),
-                            bottom = bottom
-                        )
-                    }
-                }
+                elementPadding = elementPadding,
+                backgroundRadius = backgroundRadius,
+                lineSpacingExtra = lineSpacingExtra,
+                modifier = Modifier.focusableElement(element, focusRequester, skipFocusable = true)
             )
         }
+    }
+}
+
+@Composable
+private fun TextElementTextField(
+    element: StoryTextElement,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    elementPadding: PaddingValues = PaddingValues(),
+    backgroundRadius: Dp = 0.dp,
+    lineSpacingExtra: TextUnit = 0.sp,
+) {
+    val isEmpty by remember(element) { derivedStateOf { element.text.text.isEmpty() } }
+    var linesBounds by remember { mutableStateOf(listOf<Rect>()) }
+
+    val textColor by animateColorAsState(element.textColor())
+    val textStyle = element.textStyle()
+    val mergedTextStyle = textStyle.copy(
+        color = textColor,
+        lineHeight = (textStyle.fontSize.value + lineSpacingExtra.value).sp,
+        lineHeightStyle = LineHeightStyle(
+            alignment = LineHeightStyle.Alignment.Bottom,
+            trim = LineHeightStyle.Trim.Both
+        )
+    )
+    val textSelectionColors = remember(element.colorScheme.secondary) {
+        TextSelectionColors(
+            handleColor = element.colorScheme.secondary,
+            backgroundColor = element.colorScheme.secondary.copy(alpha = 0.4f)
+        )
+    }
+    CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
+        BasicTextField(
+            value = element.text,
+            onValueChange = { element.text = it },
+            modifier = Modifier
+                .width(IntrinsicSize.Min)
+                // Cursor thickness is 2.dp
+                .widthIn(min = 2.dp)
+                .then(
+                    if (isEmpty) {
+                        // Only draw cursor if input is empty
+                        Modifier
+                    } else {
+                        val backgroundColor by animateColorAsState(element.backgroundColor())
+                        Modifier
+                            .drawBehind {
+                                val paddingSize = elementPadding
+                                    .toDpSize()
+                                    .toSize()
+                                val cornerRadius = CornerRadius(backgroundRadius.toPx())
+
+                                linesBounds.forEach { lineBounds ->
+                                    drawRoundRect(
+                                        color = backgroundColor,
+                                        topLeft = lineBounds.topLeft,
+                                        size = lineBounds.size + paddingSize,
+                                        cornerRadius = cornerRadius
+                                    )
+                                }
+                            }
+                            .padding(elementPadding)
+                    }
+                )
+                .then(modifier),
+            textStyle = mergedTextStyle,
+            cursorBrush = SolidColor(textColor),
+            enabled = enabled,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.None
+            ),
+            onTextLayout = {
+                element.updateLayoutResult(it)
+
+                // Build bounding rect for each line
+                // The line height will have the standard value for the first line
+                val lineHeight = it.multiParagraph.getLineHeight(0)
+                linesBounds = List(it.lineCount) { line ->
+                    val bottom = it.getLineBottom(line)
+                    Rect(
+                        left = it.getLineLeft(line),
+                        top = bottom - lineHeight,
+                        right = it.getLineRight(line),
+                        bottom = bottom
+                    )
+                }
+            }
+        )
     }
 }
 
