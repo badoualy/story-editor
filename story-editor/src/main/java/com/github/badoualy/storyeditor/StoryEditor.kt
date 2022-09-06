@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -160,6 +161,7 @@ private fun StoryEditorContent(
     }
 }
 
+@Stable
 interface StoryEditorScope {
 
     val editorState: StoryEditorState
@@ -334,8 +336,8 @@ private class StoryEditorScopeImpl(
 
                         // Detect taps
                         val isTapEvent = editorState.draggedElement == null &&
-                                event.changes.fastAll { it.changedToUp() } &&
-                                event.changes[0].uptimeMillis - down.uptimeMillis < 500
+                            event.changes.fastAll { it.changedToUp() } &&
+                            event.changes[0].uptimeMillis - down.uptimeMillis < 500
                         if (isTapEvent) {
                             onTap()
                             return@awaitPointerEventScope
