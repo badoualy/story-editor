@@ -126,7 +126,9 @@ private fun StoryEditorContent(
             layer = ScreenshotLayer.ELEMENTS,
             modifier = Modifier.fillMaxSize()
         ) {
-            val scope = remember(state) { StoryEditorScopeImpl(state) }
+            val scope = remember(state, onDeleteElement) {
+                StoryEditorScopeImpl(state, onDeleteElement)
+            }
             with(scope) {
                 elements.forEach { element ->
                     key(element) {
@@ -166,6 +168,8 @@ interface StoryEditorScope {
 
     val editorState: StoryEditorState
 
+    fun deleteElement(element: StoryElement)
+
     fun Modifier.focusableElement(
         element: StoryElement,
         focusRequester: FocusRequester,
@@ -181,8 +185,13 @@ interface StoryEditorScope {
 }
 
 private class StoryEditorScopeImpl(
-    override val editorState: StoryEditorState
+    override val editorState: StoryEditorState,
+    private val onDeleteElement: (StoryElement) -> Unit
 ) : StoryEditorScope {
+
+    override fun deleteElement(element: StoryElement) {
+        onDeleteElement(element)
+    }
 
     override fun Modifier.focusableElement(
         element: StoryElement,
@@ -220,8 +229,8 @@ private class StoryEditorScopeImpl(
 
                         if (isFocused) {
                             element.startEdit()
-                        } else {
-                            element.stopEdit()
+                        } else if (!element.stopEdit()) {
+                            deleteElement(element)
                         }
                     }
             }

@@ -148,16 +148,20 @@ open class StoryElementTransformation(
 
     /**
      * Called when a transformable element starts being edited. This will disable gestures,
-     * and override display state to disable scale/rotation.
+     * and override display state to the given values (by default disable scales/rotation).
      */
-    suspend fun startEdit(editPositionFraction: Offset) {
+    suspend fun startEdit(
+        scale: Float = 1f,
+        rotation: Float = 0f,
+        positionFraction: Offset
+    ) {
         // Disable scale/rotation and override position to given edit position
         isOverridingDisplayState = true
         gesturesEnabled = false
         setDisplayState(
-            scale = 1f,
-            rotation = 0f,
-            positionFraction = editPositionFraction,
+            scale = scale,
+            rotation = rotation,
+            positionFraction = positionFraction,
             animate = true
         )
     }
