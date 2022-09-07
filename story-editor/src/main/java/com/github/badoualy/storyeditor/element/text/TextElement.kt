@@ -138,7 +138,7 @@ class StoryTextElement(
         text = text.copy(selection = TextRange(text.text.length))
 
         // Override position
-        transformation.startEdit(editPositionFraction)
+        transformation.startEdit(positionFraction = editPositionFraction)
     }
 
     override suspend fun stopEdit(): Boolean {
