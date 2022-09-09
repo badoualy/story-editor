@@ -290,6 +290,7 @@ private fun TextElementTextField(
     var linesBounds by remember { mutableStateOf(listOf<Rect>()) }
 
     val textColor by animateColorAsState(element.textColor())
+    val backgroundColor by animateColorAsState(element.backgroundColor())
     val textStyle = element.textStyle()
     val mergedTextStyle = textStyle.copy(
         color = textColor,
@@ -313,31 +314,24 @@ private fun TextElementTextField(
                 .width(IntrinsicSize.Min)
                 // Cursor thickness is 2.dp
                 .widthIn(min = 2.dp)
-                .then(
-                    if (isEmpty) {
-                        // Only draw cursor if input is empty
-                        Modifier
-                    } else {
-                        val backgroundColor by animateColorAsState(element.backgroundColor())
-                        Modifier
-                            .drawBehind {
-                                val paddingSize = elementPadding
-                                    .toDpSize()
-                                    .toSize()
-                                val cornerRadius = CornerRadius(backgroundRadius.toPx())
+                .drawBehind {
+                    // Draw background on each line
+                    if (linesBounds.isEmpty()) return@drawBehind
+                    val paddingSize = elementPadding
+                        .toDpSize()
+                        .toSize()
+                    val cornerRadius = CornerRadius(backgroundRadius.toPx())
 
-                                linesBounds.forEach { lineBounds ->
-                                    drawRoundRect(
-                                        color = backgroundColor,
-                                        topLeft = lineBounds.topLeft,
-                                        size = lineBounds.size + paddingSize,
-                                        cornerRadius = cornerRadius
-                                    )
-                                }
-                            }
-                            .padding(elementPadding)
+                    linesBounds.forEach { lineBounds ->
+                        drawRoundRect(
+                            color = backgroundColor,
+                            topLeft = lineBounds.topLeft,
+                            size = lineBounds.size + paddingSize,
+                            cornerRadius = cornerRadius
+                        )
                     }
-                )
+                }
+                .then(if (isEmpty) Modifier else Modifier.padding(elementPadding))
                 .then(modifier),
             textStyle = mergedTextStyle,
             cursorBrush = SolidColor(textColor),
@@ -348,6 +342,10 @@ private fun TextElementTextField(
             ),
             onTextLayout = {
                 element.updateLayoutResult(it)
+                if (it.layoutInput.text.isEmpty()) {
+                    linesBounds = emptyList()
+                    return@BasicTextField
+                }
 
                 // Build bounding rect for each line
                 // The line height will have the standard value for the first line

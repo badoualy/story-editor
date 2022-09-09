@@ -4,6 +4,7 @@ import androidx.compose.ui.text.TextLayoutResult
 
 internal fun TextLayoutResult.getLines(): String {
     val input = layoutInput.text.toString()
+    if (input.isEmpty()) return ""
 
     return buildString {
         var currentIndex = 0
