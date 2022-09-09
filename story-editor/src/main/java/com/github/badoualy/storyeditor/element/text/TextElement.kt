@@ -319,7 +319,6 @@ private fun TextElementTextField(
     val density = LocalDensity.current
     val context = LocalContext.current
     val resolvedTextSize = if (element.enforceInitialTextLines) {
-
         if (maxWidth <= 0) return
         remember(element, maxWidth) {
             resolveAutoResizeTextSize(
