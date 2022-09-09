@@ -38,6 +38,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextLayoutResult
@@ -61,6 +63,7 @@ import com.github.badoualy.storyeditor.StoryElementTransformation
 import com.github.badoualy.storyeditor.TransformableStoryElement
 import com.github.badoualy.storyeditor.util.clearFocusOnKeyboardClose
 import com.github.badoualy.storyeditor.util.getLines
+import com.github.badoualy.storyeditor.util.horizontalPadding
 import com.github.badoualy.storyeditor.util.imePadding
 import com.github.badoualy.storyeditor.util.plus
 import com.github.badoualy.storyeditor.util.toDpSize
@@ -97,9 +100,13 @@ object StoryTextElementDefaults {
     }
 }
 
+/**
+ * @param enforceInitialTextLines if true, the text size will be automatically reduced if necessary
+ * to keep the same line breaks than the initial text
+ */
 @Stable
 class StoryTextElement(
-    text: String = "",
+    val initialText: String = "",
     alignType: AlignType = AlignType.START,
     fontStyle: FontStyle = StoryTextElementDefaults.FontStyle.Classic,
     colorSchemeType: ColorSchemeType = ColorSchemeType.BACKGROUND,
@@ -112,15 +119,17 @@ class StoryTextElement(
     private val editPositionFraction: Offset = StoryTextElementDefaults.EditPositionFraction,
 
     minScale: Float = 0.5f,
-    maxScale: Float = 3f
+    maxScale: Float = 3f,
+
+    val enforceInitialTextLines: Boolean = true
 ) : StoryElement, TransformableStoryElement {
 
-    var text by mutableStateOf(TextFieldValue(text))
+    var text by mutableStateOf(TextFieldValue(initialText))
     var alignType by mutableStateOf(alignType)
     var fontStyle by mutableStateOf(fontStyle)
     var colorSchemeType by mutableStateOf(colorSchemeType)
     var colorScheme by mutableStateOf(colorScheme)
-    var textLines: String = text
+    var textLines: String = initialText
         private set
 
     override val transformation = StoryElementTransformation(
@@ -265,13 +274,25 @@ fun StoryEditorScope.TextElement(
                 }
             }
 
+            // Instead of using BoxWithConstraints, we use editorState.elementBounds to compute maxWidth
+            // But it means we might have a few frames with maxWidth to <= 0 until the size is reported
+            val density = LocalDensity.current
+            val hitboxPaddingPx = with(density) { hitboxPadding.horizontalPadding().toPx() }
+            val elementPaddingPx = with(density) { elementPadding.horizontalPadding().toPx() }
+            val maxWidth by remember(editorState, density) {
+                derivedStateOf {
+                    editorState.elementsBounds.width - hitboxPaddingPx - elementPaddingPx
+                }
+            }
+
             TextElementTextField(
                 element = element,
                 enabled = isEnabled,
                 elementPadding = elementPadding,
                 backgroundRadius = backgroundRadius,
                 lineSpacingExtra = lineSpacingExtra,
-                modifier = Modifier.focusableElement(element, focusRequester, skipFocusable = true)
+                maxWidth = maxWidth,
+                modifier = Modifier.focusableElement(element, focusRequester, skipFocusable = true),
             )
         }
     }
@@ -285,6 +306,7 @@ private fun TextElementTextField(
     elementPadding: PaddingValues = PaddingValues(),
     backgroundRadius: Dp = 0.dp,
     lineSpacingExtra: TextUnit = 0.sp,
+    maxWidth: Float = Float.POSITIVE_INFINITY
 ) {
     val isEmpty by remember(element) { derivedStateOf { element.text.text.isEmpty() } }
     var linesBounds by remember { mutableStateOf(listOf<Rect>()) }
@@ -292,13 +314,34 @@ private fun TextElementTextField(
     val textColor by animateColorAsState(element.textColor())
     val backgroundColor by animateColorAsState(element.backgroundColor())
     val textStyle = element.textStyle()
+
+    // Resolve size to apply AutoResize effect
+    val density = LocalDensity.current
+    val context = LocalContext.current
+    val resolvedTextSize = if (element.enforceInitialTextLines) {
+
+        if (maxWidth <= 0) return
+        remember(element, maxWidth) {
+            resolveAutoResizeTextSize(
+                text = element.initialText,
+                textStyle = textStyle,
+                maxWidth = maxWidth,
+                density = density,
+                context = context
+            )
+        }
+    } else {
+        textStyle.fontSize
+    }
+
     val mergedTextStyle = textStyle.copy(
         color = textColor,
         lineHeight = (textStyle.fontSize.value + lineSpacingExtra.value).sp,
         lineHeightStyle = LineHeightStyle(
             alignment = LineHeightStyle.Alignment.Bottom,
             trim = LineHeightStyle.Trim.Both
-        )
+        ),
+        fontSize = resolvedTextSize
     )
     val textSelectionColors = remember(element.colorScheme.secondary) {
         TextSelectionColors(
@@ -306,6 +349,7 @@ private fun TextElementTextField(
             backgroundColor = element.colorScheme.secondary.copy(alpha = 0.4f)
         )
     }
+
     CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
         BasicTextField(
             value = element.text,
