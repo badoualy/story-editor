@@ -329,17 +329,12 @@ private class StoryEditorScopeImpl(
             forEachGesture {
                 awaitPointerEventScope {
                     val down = awaitFirstDown(requireUnconsumed = false)
-                    if (!transformation.gesturesEnabled) return@awaitPointerEventScope
 
                     do {
                         val event = awaitPointerEvent()
 
                         // Only allow 1 element to be dragged at the same time
                         if (editorState.draggedElement.let { it != null && it !== element }) {
-                            return@awaitPointerEventScope
-                        }
-                        // No drag while an element is focused
-                        if (editorState.focusedElement != null) {
                             return@awaitPointerEventScope
                         }
 
@@ -351,6 +346,10 @@ private class StoryEditorScopeImpl(
                             onTap()
                             return@awaitPointerEventScope
                         }
+
+                        if (!transformation.gesturesEnabled) return@awaitPointerEventScope
+                        // No drag while an element is focused
+                        if (editorState.focusedElement != null) return@awaitPointerEventScope
 
                         // Detect drags beyond a threshold
                         val movedBeyondThreshold = event.changes

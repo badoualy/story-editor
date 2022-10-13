@@ -254,7 +254,9 @@ fun StoryEditorScope.TextElement(
                     clickEnabled = editorState.editMode,
                     onClick = {
                         // request focus on TextField to edit text
-                        focusRequester.requestFocus()
+                        if (!isFocused) {
+                            focusRequester.requestFocus()
+                        }
                     },
                     hitboxPadding = hitboxPadding
                 )
