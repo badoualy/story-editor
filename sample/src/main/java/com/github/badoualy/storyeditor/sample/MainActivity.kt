@@ -54,6 +54,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -107,9 +108,15 @@ private fun Content(
     val elements = remember {
         mutableStateListOf(
             StoryTextElement(
-                text = "Kiyomizudera\nKyoto",
+                initialText = "Kiyomizudera\nKyoto",
                 positionFraction = Offset(0.2f, 0.2f)
-            )
+            ),
+            // Test enforceInitialTextLines
+//            StoryTextElement(
+//                initialText = "abcdefghijklmnopqrstuvwxyz",
+//                positionFraction = Offset(StoryTextElementDefaults.EditPositionFraction.x, 0.5f),
+//                enforceInitialTextLines = true
+//            )
         )
     }
 
