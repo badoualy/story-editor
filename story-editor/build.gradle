@@ -17,6 +17,10 @@ android {
         consumerProguardFiles "consumer-rules.pro"
     }
 
+    packagingOptions {
+        pickFirst "META-INF/*kotlin_module"
+    }
+
     buildTypes {
         release {
             minifyEnabled false
