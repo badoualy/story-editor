@@ -24,9 +24,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -81,13 +81,13 @@ class MainActivity : ComponentActivity() {
                                     )
                                 )
                         )
-                        SmallTopAppBar(
+                        TopAppBar(
+                            title = { Text("Kyoto - Kiyomizudera") },
                             navigationIcon = {
                                 IconButton(onClick = {}) {
                                     Icon(Icons.Default.Close, contentDescription = null)
                                 }
                             },
-                            title = { Text("Kyoto - Kiyomizudera") },
                             colors = TopAppBarDefaults.smallTopAppBarColors(
                                 containerColor = Color.Transparent,
                                 navigationIconContentColor = Color.White,
