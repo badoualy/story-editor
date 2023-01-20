@@ -178,7 +178,7 @@ interface StoryEditorScope {
 
     fun Modifier.elementTransformation(
         element: TransformableStoryElement,
-        clickEnabled: Boolean,
+        clickEnabled: Boolean = editorState.editMode,
         onClick: () -> Unit,
         hitboxPadding: PaddingValues = PaddingValues(0.dp)
     ): Modifier
@@ -268,7 +268,13 @@ private class StoryEditorScopeImpl(
         val transformation = element.transformation
         return this
             .detectAndApplyTransformation(element)
-            .dragTapListener(element = element, onTap = onClick)
+            .then(
+                if (clickEnabled) {
+                    Modifier.dragTapListener(element = element, onTap = onClick)
+                } else {
+                    Modifier
+                }
+            )
             .hitbox(transformation = transformation, paddingValues = hitboxPadding)
     }
 
@@ -288,28 +294,32 @@ private class StoryEditorScopeImpl(
                 translationY = position.y
             }
             .then(if (editorState.debug) Modifier.border(1.dp, Color.Red) else Modifier)
-            .pointerInput(editorState, editorState.editMode, element) {
-                if (!editorState.editMode) return@pointerInput
+            .then(
+                if (editorState.editMode) {
+                    Modifier.pointerInput(editorState, element) {
+                        detectTransformGestures { _, pan, zoom, rotation ->
+                            if (editorState.draggedElement !== element) return@detectTransformGestures
+                            if (editorState.focusedElement != null) return@detectTransformGestures
+                            if (!transformation.gesturesEnabled) return@detectTransformGestures
 
-                detectTransformGestures { _, pan, zoom, rotation ->
-                    if (editorState.draggedElement !== element) return@detectTransformGestures
-                    if (editorState.focusedElement != null) return@detectTransformGestures
-                    if (!transformation.gesturesEnabled) return@detectTransformGestures
-
-                    transformation.updateScale(
-                        scale = (transformation.scale * zoom),
-                        bounds = editorState.elementsBounds
-                    )
-                    transformation.updateRotation(
-                        rotation = transformation.rotation + rotation
-                    )
-                    transformation.updatePosition(
-                        pan = pan,
-                        editorSize = editorState.editorSize,
-                        bounds = editorState.elementsBounds
-                    )
+                            transformation.updateScale(
+                                scale = (transformation.scale * zoom),
+                                bounds = editorState.elementsBounds
+                            )
+                            transformation.updateRotation(
+                                rotation = transformation.rotation + rotation
+                            )
+                            transformation.updatePosition(
+                                pan = pan,
+                                editorSize = editorState.editorSize,
+                                bounds = editorState.elementsBounds
+                            )
+                        }
+                    }
+                } else {
+                    Modifier
                 }
-            }
+            )
     }
 
     private fun Modifier.dragTapListener(
@@ -320,10 +330,8 @@ private class StoryEditorScopeImpl(
         val dragThresholdSquare = dragThreshold * dragThreshold
         return this.pointerInput(
             editorState,
-            editorState.editMode,
             element
         ) {
-            if (!editorState.editMode) return@pointerInput
             val transformation = element.transformation
 
             forEachGesture {

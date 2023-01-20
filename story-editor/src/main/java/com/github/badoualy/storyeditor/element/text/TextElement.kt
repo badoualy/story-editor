@@ -259,8 +259,6 @@ fun StoryEditorScope.TextElement(
             modifier = Modifier
                 .elementTransformation(
                     element = element,
-                    // The element is not clickable in preview mode
-                    clickEnabled = editorState.editMode,
                     onClick = {
                         // request focus on TextField to edit text
                         if (!isFocused) {
