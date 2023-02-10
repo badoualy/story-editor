@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.badoualy.storyeditor.StoryEditorScope
+import com.github.badoualy.storyeditor.StoryEditorElementScope
 import com.github.badoualy.storyeditor.StoryEditorState.ScreenshotMode
 import com.github.badoualy.storyeditor.StoryElement
 import com.github.badoualy.storyeditor.StoryElementTransformation
@@ -221,7 +221,7 @@ class StoryTextElement(
 }
 
 @Composable
-fun StoryEditorScope.TextElement(
+fun StoryEditorElementScope.TextElement(
     element: StoryTextElement,
     modifier: Modifier = Modifier,
     hitboxPadding: PaddingValues = StoryTextElementDefaults.HitboxPadding,

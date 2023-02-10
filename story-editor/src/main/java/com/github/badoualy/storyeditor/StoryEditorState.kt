@@ -158,6 +158,11 @@ class StoryEditorState(
         FULL_NOT_CLIPPED(layers = arrayOf(ScreenshotLayer.BACKGROUND, ScreenshotLayer.ELEMENTS)),
 
         /** Screenshot support is enabled, and the screenshot will contain only the content without the background */
-        CONTENT(layers = arrayOf(ScreenshotLayer.ELEMENTS))
+        CONTENT(layers = arrayOf(ScreenshotLayer.ELEMENTS));
+
+        companion object {
+
+            val ScreenshotMode.isBackgroundDrawn get() = this == FULL || this == FULL_NOT_CLIPPED
+        }
     }
 }

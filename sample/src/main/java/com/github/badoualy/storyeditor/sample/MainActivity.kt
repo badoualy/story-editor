@@ -50,7 +50,6 @@ import com.github.badoualy.storyeditor.StoryEditor
 import com.github.badoualy.storyeditor.StoryEditorState
 import com.github.badoualy.storyeditor.element.text.StoryTextElement
 import com.github.badoualy.storyeditor.element.text.TextElement
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -125,7 +124,6 @@ private fun Content(
     Box {
         StoryEditor(
             state = editorState,
-            elements = elements.toImmutableList(),
             modifier = modifier.fillMaxSize(),
             onClick = {
                 val element = StoryTextElement()
@@ -150,9 +148,9 @@ private fun Content(
                 )
             },
             shape = RoundedCornerShape(8.dp)
-        ) { element ->
-            when (element) {
-                is StoryTextElement -> {
+        ) {
+            elements.forEach { element ->
+                Element(element = element, modifier = Modifier) {
                     TextElement(
                         element = element,
                     )

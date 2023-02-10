@@ -52,18 +52,16 @@ import androidx.compose.ui.zIndex
 import com.github.badoualy.storyeditor.component.EditorDeleteButton
 import com.github.badoualy.storyeditor.util.horizontalPadding
 import com.github.badoualy.storyeditor.util.verticalPadding
-import kotlinx.collections.immutable.ImmutableList
 
 @Composable
 fun StoryEditor(
-    elements: ImmutableList<StoryElement>,
     onClick: () -> Unit,
     onDeleteElement: (StoryElement) -> Unit,
     background: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     state: StoryEditorState = remember { StoryEditorState() },
     shape: Shape = RectangleShape,
-    content: @Composable StoryEditorScope.(StoryElement) -> Unit
+    content: @Composable StoryEditorScope.() -> Unit
 ) {
     // When used in a Pager, without wrapping in a key, the size is never reported, investigate
     key(state) {
@@ -74,7 +72,6 @@ fun StoryEditor(
         ) {
             StoryEditorContent(
                 state = state,
-                elements = elements,
                 onClick = onClick,
                 onDeleteElement = onDeleteElement,
                 background = background,
@@ -88,13 +85,12 @@ fun StoryEditor(
 @Composable
 private fun StoryEditorContent(
     state: StoryEditorState,
-    elements: ImmutableList<StoryElement>,
     onClick: () -> Unit,
     onDeleteElement: (StoryElement) -> Unit,
     modifier: Modifier = Modifier,
     background: @Composable () -> Unit,
     shape: Shape = RectangleShape,
-    content: @Composable StoryEditorScope.(StoryElement) -> Unit
+    content: @Composable StoryEditorScope.() -> Unit
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Background
@@ -130,22 +126,7 @@ private fun StoryEditorContent(
                 StoryEditorScopeImpl(state, onDeleteElement)
             }
             with(scope) {
-                elements.forEach { element ->
-                    key(element) {
-                        val isFocusedElement by remember(state) {
-                            derivedStateOf {
-                                state.focusedElement === element
-                            }
-                        }
-
-                        Box(
-                            // Make sure the focus element is on top of others
-                            modifier = Modifier.zIndex(if (isFocusedElement) 1f else 0f)
-                        ) {
-                            content(element)
-                        }
-                    }
-                }
+                content()
             }
         }
 
@@ -166,6 +147,17 @@ private fun StoryEditorContent(
 @Stable
 interface StoryEditorScope {
 
+    @Composable
+    fun Element(
+        element: StoryElement,
+        modifier: Modifier,
+        content: @Composable StoryEditorElementScope.() -> Unit
+    )
+}
+
+@Stable
+interface StoryEditorElementScope {
+
     val editorState: StoryEditorState
 
     fun deleteElement(element: StoryElement)
@@ -185,9 +177,38 @@ interface StoryEditorScope {
 }
 
 private class StoryEditorScopeImpl(
-    override val editorState: StoryEditorState,
+    private val editorState: StoryEditorState,
     private val onDeleteElement: (StoryElement) -> Unit
 ) : StoryEditorScope {
+
+    @Composable
+    override fun Element(
+        element: StoryElement,
+        modifier: Modifier,
+        content: @Composable StoryEditorElementScope.() -> Unit
+    ) {
+        key(element) {
+            val isFocusedElement by remember { derivedStateOf { editorState.focusedElement === element } }
+
+            Box(
+                // Make sure the focus element is on top of others
+                modifier = modifier.zIndex(if (isFocusedElement) 1f else 0f)
+            ) {
+                val scope = remember(onDeleteElement) {
+                    StoryEditorElementScopeImpl(editorState, onDeleteElement)
+                }
+                with(scope) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+private class StoryEditorElementScopeImpl(
+    override val editorState: StoryEditorState,
+    private val onDeleteElement: (StoryElement) -> Unit
+) : StoryEditorElementScope {
 
     override fun deleteElement(element: StoryElement) {
         onDeleteElement(element)
