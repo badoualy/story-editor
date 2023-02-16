@@ -49,7 +49,6 @@ Then:
 val elements = remember { mutableStateListOf() }
 StoryEditor(
   state = rememberStoryEditorState(),
-  elements = elements,
   modifier = modifier.fillMaxSize(),
   onClick = {
     val element = StoryTextElement()
@@ -59,13 +58,22 @@ StoryEditor(
   onDeleteElement = {
     elements.remove(it)
   },
+  background = {
+    AsyncImage(
+      "https://i.ytimg.com/vi/h78qlOYCXJQ/maxresdefault.jpg",
+      contentDescription = null,
+      contentScale = ContentScale.Crop,
+      modifier = Modifier.aspectRatio(9f / 16f)
+    )
+  }
 ) {
-  AsyncImage(
-    "https://i.ytimg.com/vi/h78qlOYCXJQ/maxresdefault.jpg",
-    contentDescription = null,
-    contentScale = ContentScale.Crop,
-    modifier = Modifier.aspectRatio(9f / 16f)
-  )
+    elements.forEach { element ->
+       Element(element = element, modifier = Modifier) {
+           TextElement(
+               element = element,
+           )
+       }
+    }
 }
 
 @Composable
