@@ -322,9 +322,9 @@ private class StoryEditorElementScopeImpl(
                 if (editorState.editMode) {
                     Modifier.pointerInput(editorState, element) {
                         detectTransformGestures { _, pan, zoom, rotation ->
-//                            if (editorState.focusedElement === element && unfocusOnGesture) {
-//                                editorState.focusedElement = null
-//                            }
+                            if (editorState.focusedElement === element && unfocusOnGesture) {
+                                editorState.focusedElement = null
+                            }
                             if (editorState.draggedElement !== element) return@detectTransformGestures
                             if (editorState.focusedElement != null) return@detectTransformGestures
                             if (!transformation.gesturesEnabled) return@detectTransformGestures
