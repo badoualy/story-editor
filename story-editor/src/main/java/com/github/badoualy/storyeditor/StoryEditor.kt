@@ -171,6 +171,7 @@ interface StoryEditorElementScope {
     fun Modifier.elementTransformation(
         element: TransformableStoryElement,
         clickEnabled: Boolean = editorState.editMode,
+        unfocusOnGesture: Boolean = false,
         onClick: () -> Unit,
         hitboxPadding: PaddingValues = PaddingValues(0.dp)
     ): Modifier
@@ -283,12 +284,13 @@ private class StoryEditorElementScopeImpl(
     override fun Modifier.elementTransformation(
         element: TransformableStoryElement,
         clickEnabled: Boolean,
+        unfocusOnGesture: Boolean,
         onClick: () -> Unit,
         hitboxPadding: PaddingValues
     ): Modifier {
         val transformation = element.transformation
         return this
-            .detectAndApplyTransformation(element)
+            .detectAndApplyTransformation(element = element, unfocusOnGesture = unfocusOnGesture)
             .then(
                 if (clickEnabled) {
                     Modifier.dragTapListener(element = element, onTap = onClick)
@@ -300,7 +302,8 @@ private class StoryEditorElementScopeImpl(
     }
 
     private fun Modifier.detectAndApplyTransformation(
-        element: TransformableStoryElement
+        element: TransformableStoryElement,
+        unfocusOnGesture: Boolean
     ): Modifier {
         val transformation = element.transformation
         return this
@@ -319,6 +322,9 @@ private class StoryEditorElementScopeImpl(
                 if (editorState.editMode) {
                     Modifier.pointerInput(editorState, element) {
                         detectTransformGestures { _, pan, zoom, rotation ->
+//                            if (editorState.focusedElement === element && unfocusOnGesture) {
+//                                editorState.focusedElement = null
+//                            }
                             if (editorState.draggedElement !== element) return@detectTransformGestures
                             if (editorState.focusedElement != null) return@detectTransformGestures
                             if (!transformation.gesturesEnabled) return@detectTransformGestures
