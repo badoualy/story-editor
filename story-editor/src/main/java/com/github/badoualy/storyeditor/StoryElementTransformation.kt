@@ -82,7 +82,7 @@ open class StoryElementTransformation(
     var hitboxSize: IntSize by mutableStateOf(IntSize.Zero)
         private set
 
-    // Scaled size (unscaled sizes multiplied by displayScale
+    // Display scaled size (unscaled sizes multiplied by displayScale)
 
     /** Scaled element size in px */
     val scaledSize: Size
@@ -170,11 +170,52 @@ open class StoryElementTransformation(
      * Called when a transformable element stops being edited. Gestures are re-enabled,
      * and display state is animated back to real values.
      */
-    suspend fun stopEdit() {
+    suspend fun stopEdit(
+        editorSize: IntSize,
+        bounds: Rect,
+        coercePosition: Boolean = true
+    ) {
+        if (coercePosition) {
+            // Make sure the item fits in the bounds
+            positionFraction = positionFraction
+                .fractionToPx(editorSize)
+                .coerceOffsetInBounds(bounds)
+                .pxToFraction(editorSize)
+        }
+
         // Stop position override
         resetDisplayState(animate = true)
         gesturesEnabled = true
         isOverridingDisplayState = false
+    }
+
+    fun centerAt(positionFraction: Offset) {
+        this.positionFraction = centerPositionToTopLeftPosition(positionFraction)
+    }
+
+    suspend fun centerDisplayAt(positionFraction: Offset, animate: Boolean) {
+        val target = centerPositionToTopLeftPosition(
+            centerPositionFraction = positionFraction,
+            sizeFraction = scaledSizeFraction
+        )
+        if (animate) {
+            _displayPositionFraction.animateTo(target)
+        } else {
+            _displayPositionFraction.snapTo(target)
+        }
+    }
+
+    /**
+     * @return the position to use in [StoryElementTransformation] to have the center at [this] fraction position.
+     *
+     * eg: if you want the element to be centered, `Offset(0.5f, 0.5f).asCenterFraction()`
+     */
+    fun centerPositionToTopLeftPosition(
+        centerPositionFraction: Offset,
+        sizeFraction: Size = this.sizeFraction * scale
+    ): Offset {
+        val positionOffset = Offset(sizeFraction.width / 2f, sizeFraction.height / 2f)
+        return centerPositionFraction - positionOffset
     }
 
     internal fun updateSize(

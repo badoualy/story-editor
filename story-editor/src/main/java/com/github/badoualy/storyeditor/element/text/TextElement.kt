@@ -53,6 +53,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -142,7 +143,7 @@ class StoryTextElement(
         maxScale = maxScale
     )
 
-    override suspend fun startEdit() {
+    override suspend fun startEdit(editorSize: IntSize, bounds: Rect) {
         // Set cursor position at the end
         text = text.copy(selection = TextRange(text.text.length))
 
@@ -150,12 +151,12 @@ class StoryTextElement(
         transformation.startEdit(positionFraction = editPositionFraction)
     }
 
-    override suspend fun stopEdit(): Boolean {
+    override suspend fun stopEdit(editorSize: IntSize, bounds: Rect): Boolean {
         text = text.copy(text = text.text.trim())
         if (text.text.isBlank()) return false
 
         // Stop position override
-        transformation.stopEdit()
+        transformation.stopEdit(editorSize, bounds)
         return true
     }
 

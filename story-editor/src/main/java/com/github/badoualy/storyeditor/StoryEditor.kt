@@ -250,9 +250,18 @@ private class StoryEditorElementScopeImpl(
                         }
 
                         if (isFocused) {
-                            element.startEdit()
-                        } else if (!element.stopEdit()) {
-                            deleteElement(element)
+                            element.startEdit(
+                                editorSize = editorState.editorSize,
+                                bounds = editorState.elementsBounds
+                            )
+                        } else {
+                            val shouldDelete = element.stopEdit(
+                                editorSize = editorState.editorSize,
+                                bounds = editorState.elementsBounds
+                            )
+                            if (!shouldDelete) {
+                                deleteElement(element)
+                            }
                         }
                     }
             }

@@ -1,7 +1,9 @@
 package com.github.badoualy.storyeditor
 
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntSize
 import kotlinx.collections.immutable.toImmutableList
 
 /**
@@ -14,10 +16,10 @@ interface StoryElement {
      * Called when the element gains focus and should update its state to an edit mode.
      * By default, calling startEdit will disable scale/rotation transformations.
      */
-    suspend fun startEdit()
+    suspend fun startEdit(editorSize: IntSize, bounds: Rect)
 
     /** @return true if the element should be kept, false otherwise */
-    suspend fun stopEdit(): Boolean
+    suspend fun stopEdit(editorSize: IntSize, bounds: Rect): Boolean
 
     data class ColorScheme(val primary: Color, val secondary: Color) {
 
