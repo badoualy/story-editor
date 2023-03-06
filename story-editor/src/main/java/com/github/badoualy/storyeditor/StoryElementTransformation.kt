@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.isUnspecified
+import androidx.compose.ui.geometry.takeOrElse
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.DpSize
@@ -53,13 +54,14 @@ open class StoryElementTransformation(
         private set
     var rotation by mutableStateOf(rotation)
         private set
-    var positionFraction by mutableStateOf(positionFraction)
+    var positionFraction by mutableStateOf(positionFraction.takeOrElse { Offset.Zero })
         private set
 
     // Currently displayed state's values
     private val _displayScale = Animatable(scale)
     private val _displayRotation = Animatable(rotation)
-    private val _displayPositionFraction = Animatable(positionFraction, Offset.VectorConverter)
+    private val _displayPositionFraction =
+        Animatable(positionFraction.takeOrElse { Offset.Zero }, Offset.VectorConverter)
 
     // Values currently displayed (can be different from real values if an animation is in progress
     val displayScale get() = _displayScale.value
