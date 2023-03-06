@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isUnspecified
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.DpSize
@@ -319,10 +320,12 @@ open class StoryElementTransformation(
     }
 
     private fun Offset.fractionToPx(editorSize: IntSize): Offset {
+        if (isUnspecified) return Offset.Zero
         return Offset(x = x * editorSize.width, y = y * editorSize.height)
     }
 
     private fun Offset.pxToFraction(editorSize: IntSize): Offset {
+        if (isUnspecified) return Offset.Zero
         return Offset(x = x / editorSize.width, y = y / editorSize.height)
     }
 
