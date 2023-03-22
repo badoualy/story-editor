@@ -11,6 +11,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isUnspecified
+import androidx.compose.ui.geometry.takeOrElse
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.DpSize
@@ -52,13 +54,14 @@ open class StoryElementTransformation(
         private set
     var rotation by mutableStateOf(rotation)
         private set
-    var positionFraction by mutableStateOf(positionFraction)
+    var positionFraction by mutableStateOf(positionFraction.takeOrElse { Offset.Zero })
         private set
 
     // Currently displayed state's values
     private val _displayScale = Animatable(scale)
     private val _displayRotation = Animatable(rotation)
-    private val _displayPositionFraction = Animatable(positionFraction, Offset.VectorConverter)
+    private val _displayPositionFraction =
+        Animatable(positionFraction.takeOrElse { Offset.Zero }, Offset.VectorConverter)
 
     // Values currently displayed (can be different from real values if an animation is in progress
     val displayScale get() = _displayScale.value
@@ -82,7 +85,7 @@ open class StoryElementTransformation(
     var hitboxSize: IntSize by mutableStateOf(IntSize.Zero)
         private set
 
-    // Scaled size (unscaled sizes multiplied by displayScale
+    // Display scaled size (unscaled sizes multiplied by displayScale)
 
     /** Scaled element size in px */
     val scaledSize: Size
@@ -170,11 +173,52 @@ open class StoryElementTransformation(
      * Called when a transformable element stops being edited. Gestures are re-enabled,
      * and display state is animated back to real values.
      */
-    suspend fun stopEdit() {
+    suspend fun stopEdit(
+        editorSize: IntSize,
+        bounds: Rect,
+        coercePosition: Boolean = true
+    ) {
+        if (coercePosition) {
+            // Make sure the item fits in the bounds
+            positionFraction = positionFraction
+                .fractionToPx(editorSize)
+                .coerceOffsetInBounds(bounds)
+                .pxToFraction(editorSize)
+        }
+
         // Stop position override
         resetDisplayState(animate = true)
         gesturesEnabled = true
         isOverridingDisplayState = false
+    }
+
+    fun centerAt(positionFraction: Offset) {
+        this.positionFraction = centerPositionToTopLeftPosition(positionFraction)
+    }
+
+    suspend fun centerDisplayAt(positionFraction: Offset, animate: Boolean) {
+        val target = centerPositionToTopLeftPosition(
+            centerPositionFraction = positionFraction,
+            sizeFraction = scaledSizeFraction
+        )
+        if (animate) {
+            _displayPositionFraction.animateTo(target)
+        } else {
+            _displayPositionFraction.snapTo(target)
+        }
+    }
+
+    /**
+     * @return the position to use in [StoryElementTransformation] to have the center at [this] fraction position.
+     *
+     * eg: if you want the element to be centered, `Offset(0.5f, 0.5f).asCenterFraction()`
+     */
+    fun centerPositionToTopLeftPosition(
+        centerPositionFraction: Offset,
+        sizeFraction: Size = this.sizeFraction * scale
+    ): Offset {
+        val positionOffset = Offset(sizeFraction.width / 2f, sizeFraction.height / 2f)
+        return centerPositionFraction - positionOffset
     }
 
     internal fun updateSize(
@@ -278,10 +322,12 @@ open class StoryElementTransformation(
     }
 
     private fun Offset.fractionToPx(editorSize: IntSize): Offset {
+        if (isUnspecified) return Offset.Zero
         return Offset(x = x * editorSize.width, y = y * editorSize.height)
     }
 
     private fun Offset.pxToFraction(editorSize: IntSize): Offset {
+        if (isUnspecified) return Offset.Zero
         return Offset(x = x / editorSize.width, y = y / editorSize.height)
     }
 

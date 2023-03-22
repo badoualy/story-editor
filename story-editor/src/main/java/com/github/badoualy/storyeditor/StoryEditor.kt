@@ -52,18 +52,16 @@ import androidx.compose.ui.zIndex
 import com.github.badoualy.storyeditor.component.EditorDeleteButton
 import com.github.badoualy.storyeditor.util.horizontalPadding
 import com.github.badoualy.storyeditor.util.verticalPadding
-import kotlinx.collections.immutable.ImmutableList
 
 @Composable
 fun StoryEditor(
-    elements: ImmutableList<StoryElement>,
     onClick: () -> Unit,
     onDeleteElement: (StoryElement) -> Unit,
     background: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     state: StoryEditorState = remember { StoryEditorState() },
     shape: Shape = RectangleShape,
-    content: @Composable StoryEditorScope.(StoryElement) -> Unit
+    content: @Composable StoryEditorScope.() -> Unit
 ) {
     // When used in a Pager, without wrapping in a key, the size is never reported, investigate
     key(state) {
@@ -74,7 +72,6 @@ fun StoryEditor(
         ) {
             StoryEditorContent(
                 state = state,
-                elements = elements,
                 onClick = onClick,
                 onDeleteElement = onDeleteElement,
                 background = background,
@@ -88,13 +85,12 @@ fun StoryEditor(
 @Composable
 private fun StoryEditorContent(
     state: StoryEditorState,
-    elements: ImmutableList<StoryElement>,
     onClick: () -> Unit,
     onDeleteElement: (StoryElement) -> Unit,
     modifier: Modifier = Modifier,
     background: @Composable () -> Unit,
     shape: Shape = RectangleShape,
-    content: @Composable StoryEditorScope.(StoryElement) -> Unit
+    content: @Composable StoryEditorScope.() -> Unit
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Background
@@ -130,22 +126,7 @@ private fun StoryEditorContent(
                 StoryEditorScopeImpl(state, onDeleteElement)
             }
             with(scope) {
-                elements.forEach { element ->
-                    key(element) {
-                        val isFocusedElement by remember(state) {
-                            derivedStateOf {
-                                state.focusedElement === element
-                            }
-                        }
-
-                        Box(
-                            // Make sure the focus element is on top of others
-                            modifier = Modifier.zIndex(if (isFocusedElement) 1f else 0f)
-                        ) {
-                            content(element)
-                        }
-                    }
-                }
+                content()
             }
         }
 
@@ -166,6 +147,17 @@ private fun StoryEditorContent(
 @Stable
 interface StoryEditorScope {
 
+    @Composable
+    fun Element(
+        element: StoryElement,
+        modifier: Modifier,
+        content: @Composable StoryEditorElementScope.() -> Unit
+    )
+}
+
+@Stable
+interface StoryEditorElementScope {
+
     val editorState: StoryEditorState
 
     fun deleteElement(element: StoryElement)
@@ -178,16 +170,46 @@ interface StoryEditorScope {
 
     fun Modifier.elementTransformation(
         element: TransformableStoryElement,
-        clickEnabled: Boolean,
+        clickEnabled: Boolean = editorState.editMode,
+        unfocusOnGesture: Boolean = false,
         onClick: () -> Unit,
         hitboxPadding: PaddingValues = PaddingValues(0.dp)
     ): Modifier
 }
 
 private class StoryEditorScopeImpl(
-    override val editorState: StoryEditorState,
+    private val editorState: StoryEditorState,
     private val onDeleteElement: (StoryElement) -> Unit
 ) : StoryEditorScope {
+
+    @Composable
+    override fun Element(
+        element: StoryElement,
+        modifier: Modifier,
+        content: @Composable StoryEditorElementScope.() -> Unit
+    ) {
+        key(element) {
+            val isFocusedElement by remember { derivedStateOf { editorState.focusedElement === element } }
+
+            Box(
+                // Make sure the focus element is on top of others
+                modifier = modifier.zIndex(if (isFocusedElement) 1f else 0f)
+            ) {
+                val scope = remember(onDeleteElement) {
+                    StoryEditorElementScopeImpl(editorState, onDeleteElement)
+                }
+                with(scope) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+private class StoryEditorElementScopeImpl(
+    override val editorState: StoryEditorState,
+    private val onDeleteElement: (StoryElement) -> Unit
+) : StoryEditorElementScope {
 
     override fun deleteElement(element: StoryElement) {
         onDeleteElement(element)
@@ -228,9 +250,18 @@ private class StoryEditorScopeImpl(
                         }
 
                         if (isFocused) {
-                            element.startEdit()
-                        } else if (!element.stopEdit()) {
-                            deleteElement(element)
+                            element.startEdit(
+                                editorSize = editorState.editorSize,
+                                bounds = editorState.elementsBounds
+                            )
+                        } else {
+                            val shouldDelete = element.stopEdit(
+                                editorSize = editorState.editorSize,
+                                bounds = editorState.elementsBounds
+                            )
+                            if (!shouldDelete) {
+                                deleteElement(element)
+                            }
                         }
                     }
             }
@@ -262,18 +293,26 @@ private class StoryEditorScopeImpl(
     override fun Modifier.elementTransformation(
         element: TransformableStoryElement,
         clickEnabled: Boolean,
+        unfocusOnGesture: Boolean,
         onClick: () -> Unit,
         hitboxPadding: PaddingValues
     ): Modifier {
         val transformation = element.transformation
         return this
-            .detectAndApplyTransformation(element)
-            .dragTapListener(element = element, onTap = onClick)
+            .detectAndApplyTransformation(element = element, unfocusOnGesture = unfocusOnGesture)
+            .then(
+                if (clickEnabled) {
+                    Modifier.dragTapListener(element = element, onTap = onClick)
+                } else {
+                    Modifier
+                }
+            )
             .hitbox(transformation = transformation, paddingValues = hitboxPadding)
     }
 
     private fun Modifier.detectAndApplyTransformation(
-        element: TransformableStoryElement
+        element: TransformableStoryElement,
+        unfocusOnGesture: Boolean
     ): Modifier {
         val transformation = element.transformation
         return this
@@ -288,28 +327,35 @@ private class StoryEditorScopeImpl(
                 translationY = position.y
             }
             .then(if (editorState.debug) Modifier.border(1.dp, Color.Red) else Modifier)
-            .pointerInput(editorState, editorState.editMode, element) {
-                if (!editorState.editMode) return@pointerInput
+            .then(
+                if (editorState.editMode) {
+                    Modifier.pointerInput(editorState, element) {
+                        detectTransformGestures { _, pan, zoom, rotation ->
+                            if (editorState.focusedElement === element && unfocusOnGesture) {
+                                editorState.focusedElement = null
+                            }
+                            if (editorState.draggedElement !== element) return@detectTransformGestures
+                            if (editorState.focusedElement != null) return@detectTransformGestures
+                            if (!transformation.gesturesEnabled) return@detectTransformGestures
 
-                detectTransformGestures { _, pan, zoom, rotation ->
-                    if (editorState.draggedElement !== element) return@detectTransformGestures
-                    if (editorState.focusedElement != null) return@detectTransformGestures
-                    if (!transformation.gesturesEnabled) return@detectTransformGestures
-
-                    transformation.updateScale(
-                        scale = (transformation.scale * zoom),
-                        bounds = editorState.elementsBounds
-                    )
-                    transformation.updateRotation(
-                        rotation = transformation.rotation + rotation
-                    )
-                    transformation.updatePosition(
-                        pan = pan,
-                        editorSize = editorState.editorSize,
-                        bounds = editorState.elementsBounds
-                    )
+                            transformation.updateScale(
+                                scale = (transformation.scale * zoom),
+                                bounds = editorState.elementsBounds
+                            )
+                            transformation.updateRotation(
+                                rotation = transformation.rotation + rotation
+                            )
+                            transformation.updatePosition(
+                                pan = pan,
+                                editorSize = editorState.editorSize,
+                                bounds = editorState.elementsBounds
+                            )
+                        }
+                    }
+                } else {
+                    Modifier
                 }
-            }
+            )
     }
 
     private fun Modifier.dragTapListener(
@@ -320,10 +366,8 @@ private class StoryEditorScopeImpl(
         val dragThresholdSquare = dragThreshold * dragThreshold
         return this.pointerInput(
             editorState,
-            editorState.editMode,
             element
         ) {
-            if (!editorState.editMode) return@pointerInput
             val transformation = element.transformation
 
             forEachGesture {

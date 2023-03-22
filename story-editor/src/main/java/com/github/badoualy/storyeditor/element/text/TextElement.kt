@@ -53,10 +53,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.badoualy.storyeditor.StoryEditorScope
+import com.github.badoualy.storyeditor.StoryEditorElementScope
 import com.github.badoualy.storyeditor.StoryEditorState.ScreenshotMode
 import com.github.badoualy.storyeditor.StoryElement
 import com.github.badoualy.storyeditor.StoryElementTransformation
@@ -142,7 +143,7 @@ class StoryTextElement(
         maxScale = maxScale
     )
 
-    override suspend fun startEdit() {
+    override suspend fun startEdit(editorSize: IntSize, bounds: Rect) {
         // Set cursor position at the end
         text = text.copy(selection = TextRange(text.text.length))
 
@@ -150,12 +151,12 @@ class StoryTextElement(
         transformation.startEdit(positionFraction = editPositionFraction)
     }
 
-    override suspend fun stopEdit(): Boolean {
+    override suspend fun stopEdit(editorSize: IntSize, bounds: Rect): Boolean {
         text = text.copy(text = text.text.trim())
         if (text.text.isBlank()) return false
 
         // Stop position override
-        transformation.stopEdit()
+        transformation.stopEdit(editorSize, bounds)
         return true
     }
 
@@ -221,7 +222,7 @@ class StoryTextElement(
 }
 
 @Composable
-fun StoryEditorScope.TextElement(
+fun StoryEditorElementScope.TextElement(
     element: StoryTextElement,
     modifier: Modifier = Modifier,
     hitboxPadding: PaddingValues = StoryTextElementDefaults.HitboxPadding,
@@ -259,8 +260,6 @@ fun StoryEditorScope.TextElement(
             modifier = Modifier
                 .elementTransformation(
                     element = element,
-                    // The element is not clickable in preview mode
-                    clickEnabled = editorState.editMode,
                     onClick = {
                         // request focus on TextField to edit text
                         if (!isFocused) {
