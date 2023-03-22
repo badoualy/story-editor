@@ -396,6 +396,11 @@ private fun TextElementTextField(
                 // The line height will have the standard value for the first line
                 val lineHeight = it.multiParagraph.getLineHeight(0)
                 linesBounds = List(it.lineCount) { line ->
+                    val lineContent = it.layoutInput.text.text.substring(
+                        it.getLineStart(line),
+                        it.getLineEnd(line)
+                    )
+                    if (lineContent.isBlank()) return@List Rect.Zero
                     val bottom = it.getLineBottom(line)
                     Rect(
                         left = it.getLineLeft(line),
