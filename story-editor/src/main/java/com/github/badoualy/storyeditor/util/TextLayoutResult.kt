@@ -6,14 +6,11 @@ internal fun TextLayoutResult.getLines(): String {
     val input = layoutInput.text.toString()
     if (input.isEmpty()) return ""
 
-    return buildString {
-        var currentIndex = 0
-
-        repeat(lineCount) { line ->
-            val lineEnd = getLineEnd(line)
-            appendLine(input.substring(currentIndex, lineEnd))
-
-            currentIndex = lineEnd
-        }
-    }.trim()
+    return (0 until lineCount).joinToString("\n") { line ->
+        val lineContent = input.substring(
+            getLineStart(line),
+            getLineEnd(line, visibleEnd = true)
+        )
+        lineContent
+    }
 }
