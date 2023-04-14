@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.isSpecified
 import androidx.compose.ui.geometry.isUnspecified
 import androidx.compose.ui.geometry.takeOrElse
 import androidx.compose.ui.graphics.Matrix
@@ -290,35 +291,43 @@ open class StoryElementTransformation(
         // The scale from graphicsLayer is centered on the coordinates
         // If left = 150 with width = 400, centerX is 350
         // When scaled to 3*, width = 1200, centerX will stay at 350, and left = -250
+        val scaledHitboxSize = scaledHitboxSize.takeIf { it.isSpecified } ?: Size.Zero
+        val hitboxSize = hitboxSize
+        val scaledSize = scaledSize.takeIf { it.isSpecified } ?: Size.Zero
+
         val scaleOffset = Offset(
             (scaledHitboxSize.width - hitboxSize.width) / 2f,
             (scaledHitboxSize.height - hitboxSize.height) / 2f
-        )
+        ).takeIf { it.isSpecified } ?: Offset.Zero
 
         // Offset for hitbox padding
         val hitboxOffset = Offset(
             (scaledHitboxSize.width - scaledSize.width) / 2f,
             (scaledHitboxSize.height - scaledSize.height) / 2f,
-        )
+        ).takeIf { it.isSpecified } ?: Offset.Zero
 
         return _displayPositionFraction.value.fractionToPx(editorSize) + scaleOffset - hitboxOffset
     }
 
     private fun Offset.coerceOffsetInBounds(bounds: Rect): Offset {
-        val scaledElementSize = scaledSize
-        val elementRect = Rect(this, scaledElementSize)
+        return try {
+            val scaledElementSize = scaledSize
+            val elementRect = Rect(this, scaledElementSize)
 
-        // Apply rotation transformation onto rect
-        val matrix = Matrix().apply { rotateZ(displayRotation, elementRect.center) }
-        val transformedRect = matrix.map(elementRect)
+            // Apply rotation transformation onto rect
+            val matrix = Matrix().apply { rotateZ(displayRotation, elementRect.center) }
+            val transformedRect = matrix.map(elementRect)
 
-        // Coerce in bounds
-        val coercedRect = transformedRect.coerceInOrCenter(bounds)
+            // Coerce in bounds
+            val coercedRect = transformedRect.coerceInOrCenter(bounds)
 
-        // Difference between coerced position and original position
-        val offset = (coercedRect.topLeft - transformedRect.topLeft) / scale
+            // Difference between coerced position and original position
+            val offset = (coercedRect.topLeft - transformedRect.topLeft) / scale
 
-        return this + offset
+            this + offset
+        } catch (e: Exception) {
+            this
+        }
     }
 
     private fun Offset.fractionToPx(editorSize: IntSize): Offset {
