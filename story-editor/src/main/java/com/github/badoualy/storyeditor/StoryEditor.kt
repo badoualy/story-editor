@@ -126,7 +126,11 @@ private fun StoryEditorContent(
                 StoryEditorScopeImpl(state, onDeleteElement)
             }
             with(scope) {
-                content()
+                // Wait for editorSize to be reported before actually adding elements to composition
+                val isEditorSizeReported by remember { derivedStateOf { state.editorSize.width > 0 } }
+                if (isEditorSizeReported) {
+                    content()
+                }
             }
         }
 

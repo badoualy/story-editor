@@ -73,14 +73,14 @@ internal fun EditorDeleteButton(
         exit = fadeOut(),
         modifier = modifier
             .onPlaced { deleteBounds = it.boundsInParent() }
+            .scale(if (isInDeleteRange) 1.5f else 1f)
             .padding(24.dp)
     ) {
         val color = if (isInDeleteRange) Color.Red else Color.Black
         Surface(
             shape = CircleShape,
             color = color.copy(alpha = 0.5f),
-            contentColor = Color.White,
-            modifier = Modifier.scale(if (isInDeleteRange) 1.5f else 1f)
+            contentColor = Color.White
         ) {
             Icon(
                 Icons.Default.Delete,
