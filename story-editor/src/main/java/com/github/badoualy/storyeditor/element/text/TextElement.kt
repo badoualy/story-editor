@@ -228,7 +228,7 @@ fun StoryEditorElementScope.TextElement(
     hitboxPadding: PaddingValues = StoryTextElementDefaults.HitboxPadding,
     elementPadding: PaddingValues = StoryTextElementDefaults.Padding,
     backgroundRadius: Dp = StoryTextElementDefaults.BackgroundRadius,
-    lineSpacingExtra: TextUnit = 10.sp,
+    lineSpacingExtra: TextUnit = 5.sp,
     fontStyles: ImmutableList<StoryTextElement.FontStyle> = StoryTextElementDefaults.FontStyle.DefaultList,
     colorSchemes: ImmutableList<StoryElement.ColorScheme> = StoryElement.ColorScheme.DefaultList,
 ) {
@@ -336,12 +336,16 @@ private fun TextElementTextField(
 
     val mergedTextStyle = textStyle.copy(
         color = textColor,
+        fontSize = resolvedTextSize,
         lineHeight = (textStyle.fontSize.value + lineSpacingExtra.value).sp,
+        // Force proportional alignment + trim both to make sure
+        // lineSpacingExtra is not taken into account when text is 1 line
         lineHeightStyle = LineHeightStyle(
-            alignment = LineHeightStyle.Alignment.Bottom,
-            trim = LineHeightStyle.Trim.Both
-        ),
-        fontSize = resolvedTextSize
+            // Add extra lineHeight spacing at the bottom of each line
+            alignment = LineHeightStyle.Alignment.Top,
+            // Remove extra lineHeight spacing from lastLine
+            trim = LineHeightStyle.Trim.LastLineBottom
+        )
     )
     val textSelectionColors = remember(element.colorScheme.secondary) {
         TextSelectionColors(
@@ -392,20 +396,19 @@ private fun TextElementTextField(
                 }
 
                 // Build bounding rect for each line
-                // The line height will have the standard value for the first line
-                val lineHeight = it.multiParagraph.getLineHeight(0)
+                val lineHeightPx = with(density) { resolvedTextSize.toPx() }
                 linesBounds = List(it.lineCount) { line ->
                     val lineContent = it.layoutInput.text.text.substring(
                         it.getLineStart(line),
                         it.getLineEnd(line)
                     )
                     if (lineContent.isBlank()) return@List Rect.Zero
-                    val bottom = it.getLineBottom(line)
+                    val top = it.getLineTop(line)
                     Rect(
                         left = it.getLineLeft(line),
-                        top = bottom - lineHeight,
+                        top = top,
                         right = it.getLineRight(line),
-                        bottom = bottom
+                        bottom = top + lineHeightPx,
                     )
                 }
             }
