@@ -337,13 +337,9 @@ private fun TextElementTextField(
     val mergedTextStyle = textStyle.copy(
         color = textColor,
         fontSize = resolvedTextSize,
-        lineHeight = (textStyle.fontSize.value + lineSpacingExtra.value).sp,
-        // Force proportional alignment + trim both to make sure
-        // lineSpacingExtra is not taken into account when text is 1 line
+        lineHeight = (textStyle.lineHeight.value + lineSpacingExtra.value).sp,
         lineHeightStyle = LineHeightStyle(
-            // Add extra lineHeight spacing at the bottom of each line
             alignment = LineHeightStyle.Alignment.Top,
-            // Remove extra lineHeight spacing from lastLine
             trim = LineHeightStyle.Trim.LastLineBottom
         )
     )
@@ -388,26 +384,29 @@ private fun TextElementTextField(
                 capitalization = KeyboardCapitalization.Words,
                 imeAction = ImeAction.None
             ),
-            onTextLayout = {
-                element.updateLayoutResult(it)
-                if (it.layoutInput.text.isEmpty()) {
+            onTextLayout = { layout ->
+                element.updateLayoutResult(layout)
+                if (layout.layoutInput.text.isEmpty()) {
                     linesBounds = emptyList()
                     return@BasicTextField
                 }
 
+                // Because we add space to the bottom of the line and we trim lastLine bottom, last line is the real height
+                val lineHeightPx = layout.multiParagraph.getLineHeight(layout.lineCount - 1)
+
                 // Build bounding rect for each line
-                val lineHeightPx = with(density) { resolvedTextSize.toPx() }
-                linesBounds = List(it.lineCount) { line ->
-                    val lineContent = it.layoutInput.text.text.substring(
-                        it.getLineStart(line),
-                        it.getLineEnd(line)
+                linesBounds = List(layout.lineCount) { line ->
+                    val lineContent = layout.layoutInput.text.text.substring(
+                        layout.getLineStart(line),
+                        layout.getLineEnd(line)
                     )
                     if (lineContent.isBlank()) return@List Rect.Zero
-                    val top = it.getLineTop(line)
+
+                    val top = layout.getLineTop(line)
                     Rect(
-                        left = it.getLineLeft(line),
+                        left = layout.getLineLeft(line),
                         top = top,
-                        right = it.getLineRight(line),
+                        right = layout.getLineRight(line),
                         bottom = top + lineHeightPx,
                     )
                 }
