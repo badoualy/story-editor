@@ -30,7 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -228,7 +229,7 @@ fun StoryEditorElementScope.TextElement(
     hitboxPadding: PaddingValues = StoryTextElementDefaults.HitboxPadding,
     elementPadding: PaddingValues = StoryTextElementDefaults.Padding,
     backgroundRadius: Dp = StoryTextElementDefaults.BackgroundRadius,
-    lineSpacingExtra: TextUnit = 10.sp,
+    lineSpacingExtra: TextUnit = 5.sp,
     fontStyles: ImmutableList<StoryTextElement.FontStyle> = StoryTextElementDefaults.FontStyle.DefaultList,
     colorSchemes: ImmutableList<StoryElement.ColorScheme> = StoryElement.ColorScheme.DefaultList,
 ) {
@@ -336,12 +337,12 @@ private fun TextElementTextField(
 
     val mergedTextStyle = textStyle.copy(
         color = textColor,
-        lineHeight = (textStyle.fontSize.value + lineSpacingExtra.value).sp,
+        fontSize = resolvedTextSize,
+        lineHeight = (textStyle.lineHeight.value + lineSpacingExtra.value).sp,
         lineHeightStyle = LineHeightStyle(
-            alignment = LineHeightStyle.Alignment.Bottom,
-            trim = LineHeightStyle.Trim.Both
-        ),
-        fontSize = resolvedTextSize
+            alignment = LineHeightStyle.Alignment.Top,
+            trim = LineHeightStyle.Trim.LastLineBottom
+        )
     )
     val textSelectionColors = remember(element.colorScheme.secondary) {
         TextSelectionColors(
@@ -358,21 +359,30 @@ private fun TextElementTextField(
                 .width(IntrinsicSize.Min)
                 // Cursor thickness is 2.dp
                 .widthIn(min = 2.dp)
-                .drawBehind {
+                .drawWithContent {
+                    if (linesBounds.isEmpty()) return@drawWithContent
+
                     // Draw background on each line
-                    if (linesBounds.isEmpty()) return@drawBehind
                     val paddingSize = elementPadding
                         .toDpSize()
                         .toSize()
                     val cornerRadius = CornerRadius(backgroundRadius.toPx())
+                    val lastVisibleLine = linesBounds.lastOrNull { it.bottom <= size.height }
 
                     linesBounds.forEach { lineBounds ->
+                        if (lineBounds.width == 0f || lineBounds.bottom > size.height) return@forEach
                         drawRoundRect(
                             color = backgroundColor,
                             topLeft = lineBounds.topLeft,
                             size = lineBounds.size + paddingSize,
                             cornerRadius = cornerRadius
                         )
+                    }
+
+                    // Clip to the last visible line to make sure we don't display vertically cropped text
+                    // because of TextField internal scroll modifier
+                    clipRect(bottom = lastVisibleLine?.bottom ?: size.height) {
+                        this@drawWithContent.drawContent()
                     }
                 }
                 .then(if (isEmpty) Modifier else Modifier.padding(elementPadding))
@@ -384,28 +394,31 @@ private fun TextElementTextField(
                 capitalization = KeyboardCapitalization.Words,
                 imeAction = ImeAction.None
             ),
-            onTextLayout = {
-                element.updateLayoutResult(it)
-                if (it.layoutInput.text.isEmpty()) {
+            onTextLayout = { layout ->
+                element.updateLayoutResult(layout)
+                if (layout.layoutInput.text.isEmpty()) {
                     linesBounds = emptyList()
                     return@BasicTextField
                 }
 
+                // Because we add space to the bottom of the line and we trim lastLine bottom, last line is the real height
+                val lineHeightPx = layout.multiParagraph.getLineHeight(layout.lineCount - 1)
+
                 // Build bounding rect for each line
-                // The line height will have the standard value for the first line
-                val lineHeight = it.multiParagraph.getLineHeight(0)
-                linesBounds = List(it.lineCount) { line ->
-                    val lineContent = it.layoutInput.text.text.substring(
-                        it.getLineStart(line),
-                        it.getLineEnd(line)
+                linesBounds = List(layout.lineCount) { line ->
+                    val lineContent = layout.layoutInput.text.text.substring(
+                        layout.getLineStart(line),
+                        layout.getLineEnd(line)
                     )
-                    if (lineContent.isBlank()) return@List Rect.Zero
-                    val bottom = it.getLineBottom(line)
+
+                    val top = layout.getLineTop(line)
+                    val bottom = top + lineHeightPx
+                    if (lineContent.isBlank()) return@List Rect(0f, top, 0f, bottom)
                     Rect(
-                        left = it.getLineLeft(line),
-                        top = bottom - lineHeight,
-                        right = it.getLineRight(line),
-                        bottom = bottom
+                        left = layout.getLineLeft(line),
+                        top = top,
+                        right = layout.getLineRight(line),
+                        bottom = bottom,
                     )
                 }
             }

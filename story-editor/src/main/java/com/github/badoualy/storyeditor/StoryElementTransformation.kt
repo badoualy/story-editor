@@ -222,6 +222,10 @@ open class StoryElementTransformation(
         return centerPositionFraction - positionOffset
     }
 
+    fun resetScale() {
+        scale = 1f
+    }
+
     internal fun updateSize(
         size: IntSize,
         sizeDp: DpSize,
