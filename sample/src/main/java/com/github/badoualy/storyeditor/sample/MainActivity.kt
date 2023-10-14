@@ -27,7 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -87,7 +87,7 @@ class MainActivity : ComponentActivity() {
                                     Icon(Icons.Default.Close, contentDescription = null)
                                 }
                             },
-                            colors = TopAppBarDefaults.smallTopAppBarColors(
+                            colors = topAppBarColors(
                                 containerColor = Color.Transparent,
                                 navigationIconContentColor = Color.White,
                                 titleContentColor = Color.White

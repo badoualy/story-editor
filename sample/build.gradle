@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace "com.github.badoualy.storyeditor.sample"
-    compileSdkVersion 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.github.badoualy.storyeditor.sample"
         minSdkVersion 23
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
 
@@ -35,21 +35,21 @@ android {
         jvmTarget = '1.8'
     }
     composeOptions {
-        kotlinCompilerExtensionVersion "1.4.8"
+        kotlinCompilerExtensionVersion "1.5.3"
     }
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
-    implementation "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5"
-    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.10"
+    implementation "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.6"
+    implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation "androidx.compose.material3:material3:1.1.1"
+    implementation "androidx.compose.material3:material3:1.1.2"
 
-    implementation "androidx.compose.ui:ui:1.4.3"
-    implementation "androidx.compose.material:material:1.4.3"
-    implementation "androidx.compose.ui:ui-tooling:1.4.3"
-    implementation "androidx.activity:activity-compose:1.7.2"
+    implementation "androidx.compose.ui:ui:1.5.3"
+    implementation "androidx.compose.material:material:1.5.3"
+    implementation "androidx.compose.ui:ui-tooling:1.5.3"
+    implementation "androidx.activity:activity-compose:1.8.0"
 
     implementation("io.coil-kt:coil-compose:2.4.0")
 
