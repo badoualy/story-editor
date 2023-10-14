@@ -6,6 +6,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
@@ -51,9 +52,9 @@ open class StoryElementTransformation(
     var gesturesEnabled by mutableStateOf(true)
 
     // Real values
-    var scale by mutableStateOf(scale)
+    var scale by mutableFloatStateOf(scale)
         private set
-    var rotation by mutableStateOf(rotation)
+    var rotation by mutableFloatStateOf(rotation)
         private set
     var positionFraction by mutableStateOf(positionFraction.takeOrElse { Offset.Zero })
         private set
