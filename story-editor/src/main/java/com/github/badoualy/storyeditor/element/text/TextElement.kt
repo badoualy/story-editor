@@ -308,6 +308,8 @@ fun TextElementTextField(
     lineSpacingExtra: TextUnit = 0.sp,
     maxWidth: Float = Float.POSITIVE_INFINITY,
     onValueChange: (TextFieldValue) -> Unit = { element.text = it },
+    decorationBox: @Composable (innerTextField: @Composable () -> Unit) -> Unit =
+        @Composable { innerTextField -> innerTextField() }
 ) {
     val isEmpty by remember(element) { derivedStateOf { element.text.text.isEmpty() } }
     var linesBounds by remember { mutableStateOf(listOf<Rect>()) }
@@ -423,7 +425,8 @@ fun TextElementTextField(
                         bottom = bottom,
                     )
                 }
-            }
+            },
+            decorationBox = decorationBox,
         )
     }
 }
