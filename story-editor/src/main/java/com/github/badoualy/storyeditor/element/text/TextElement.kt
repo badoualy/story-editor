@@ -173,14 +173,14 @@ class StoryTextElement(
         colorSchemeType = ColorSchemeType.values()[index]
     }
 
-    internal fun textStyle(): TextStyle {
+    fun textStyle(): TextStyle {
         return fontStyle.textStyle.copy(
             color = textColor(),
             textAlign = textAlign()
         )
     }
 
-    internal fun backgroundColor(): Color {
+    fun backgroundColor(): Color {
         return when (colorSchemeType) {
             ColorSchemeType.BACKGROUND -> colorScheme.primary
             ColorSchemeType.INVERTED -> colorScheme.secondary
@@ -188,7 +188,7 @@ class StoryTextElement(
         }
     }
 
-    internal fun textColor(): Color {
+    fun textColor(): Color {
         return when (colorSchemeType) {
             ColorSchemeType.BACKGROUND -> colorScheme.secondary
             ColorSchemeType.INVERTED -> colorScheme.primary
