@@ -1,5 +1,4 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
-@file:OptIn(ExperimentalTextApi::class)
 
 package com.github.badoualy.storyeditor.element.text
 
@@ -42,7 +41,6 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -301,14 +299,15 @@ fun StoryEditorElementScope.TextElement(
 }
 
 @Composable
-private fun TextElementTextField(
+fun TextElementTextField(
     element: StoryTextElement,
     enabled: Boolean,
     modifier: Modifier = Modifier,
     elementPadding: PaddingValues = PaddingValues(),
     backgroundRadius: Dp = 0.dp,
     lineSpacingExtra: TextUnit = 0.sp,
-    maxWidth: Float = Float.POSITIVE_INFINITY
+    maxWidth: Float = Float.POSITIVE_INFINITY,
+    onValueChange: (TextFieldValue) -> Unit = { element.text = it },
 ) {
     val isEmpty by remember(element) { derivedStateOf { element.text.text.isEmpty() } }
     var linesBounds by remember { mutableStateOf(listOf<Rect>()) }
@@ -354,13 +353,16 @@ private fun TextElementTextField(
     CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
         BasicTextField(
             value = element.text,
-            onValueChange = { element.text = it },
+            onValueChange = onValueChange,
             modifier = Modifier
                 .width(IntrinsicSize.Min)
                 // Cursor thickness is 2.dp
                 .widthIn(min = 2.dp)
                 .drawWithContent {
-                    if (linesBounds.isEmpty()) return@drawWithContent
+                    if (linesBounds.isEmpty()) {
+                        drawContent()
+                        return@drawWithContent
+                    }
 
                     // Draw background on each line
                     val paddingSize = elementPadding
@@ -427,7 +429,7 @@ private fun TextElementTextField(
 }
 
 @Composable
-private fun TextElementEditorOverlay(
+fun TextElementEditorOverlay(
     element: StoryTextElement,
     isScreenshotModeEnabled: Boolean,
     onClickOutside: () -> Unit,

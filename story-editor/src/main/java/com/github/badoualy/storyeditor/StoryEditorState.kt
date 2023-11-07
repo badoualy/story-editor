@@ -51,6 +51,15 @@ class StoryEditorState(
         private set
 
     /**
+     * Bounds of allowed position in px for each side.
+     * eg:
+     * - left 10 means elements' offset can't be smaller than 10
+     * - right 90 means elements' right position in parent can't exceed 90
+     */
+    var elementsBounds by mutableStateOf(Rect.Zero)
+        private set
+
+    /**
      * Element currently focused for edition.
      * When an element is focused, other elements can't be interacted with.
      */
@@ -67,15 +76,6 @@ class StoryEditorState(
      * Reset to [Offset.Unspecified] when drag is finished.
      */
     internal var pointerPosition: Offset by mutableStateOf(Offset.Unspecified)
-
-    /**
-     * Bounds of allowed position in px for each side.
-     * eg:
-     * - left 10 means elements' offset can't be smaller than 10
-     * - right 90 means elements' right position in parent can't exceed 90
-     */
-    internal var elementsBounds by mutableStateOf(Rect.Zero)
-        private set
 
     private val _screenshotRequest = MutableSharedFlow<ScreenshotRequest>(extraBufferCapacity = 1)
     internal val screenshotRequest get() = _screenshotRequest.asSharedFlow()
