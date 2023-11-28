@@ -136,7 +136,7 @@ private fun Content(
             background = {
                 AsyncImage(
                     ImageRequest.Builder(LocalContext.current)
-                        .data("https://www.cercledesvoyages.com/wp-content/webp-express/webp-images/uploads/2020/12/pm_8002_101_101701-43vek4eifa-3364.jpeg.webp")
+                        .data("https://www.cercledesvoyages.com/wp-content/uploads/2020/12/iStock-509472000.jpg")
                         // Very important to avoid hardware bitmap crash when taking screenshot
                         .allowHardware(false)
                         .build(),

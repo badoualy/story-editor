@@ -9,9 +9,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -55,6 +53,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import com.github.badoualy.storyeditor.StoryEditorElementScope
 import com.github.badoualy.storyeditor.StoryEditorState.ScreenshotMode
@@ -339,7 +338,11 @@ fun TextElementTextField(
     val mergedTextStyle = textStyle.copy(
         color = textColor,
         fontSize = resolvedTextSize,
-        lineHeight = (textStyle.lineHeight.value + lineSpacingExtra.value).sp,
+        lineHeight = if (textStyle.lineHeight.isSpecified) {
+            (textStyle.lineHeight.value + lineSpacingExtra.value).sp
+        } else {
+            TextUnit.Unspecified
+        },
         lineHeightStyle = LineHeightStyle(
             alignment = LineHeightStyle.Alignment.Top,
             trim = LineHeightStyle.Trim.LastLineBottom
@@ -444,7 +447,7 @@ fun TextElementEditorOverlay(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.4f))
-            .imePadding(consume = WindowInsets.navigationBars.takeIf { isScreenshotModeEnabled })
+            .imePadding(ignoreNavigationBar = isScreenshotModeEnabled)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,

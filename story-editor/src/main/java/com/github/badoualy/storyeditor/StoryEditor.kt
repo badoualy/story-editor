@@ -52,6 +52,7 @@ import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.zIndex
 import com.github.badoualy.storyeditor.component.EditorDeleteButton
+import com.github.badoualy.storyeditor.util.ProvidesWindowInsets
 import com.github.badoualy.storyeditor.util.horizontalPadding
 import com.github.badoualy.storyeditor.util.verticalPadding
 
@@ -67,19 +68,21 @@ fun StoryEditor(
 ) {
     // When used in a Pager, without wrapping in a key, the size is never reported, investigate
     key(state) {
-        ScreenshotLayer(
-            state = state,
-            layer = ScreenshotLayer.EDITOR,
-            modifier = modifier
-        ) {
-            StoryEditorContent(
+        ProvidesWindowInsets {
+            ScreenshotLayer(
                 state = state,
-                onClick = onClick,
-                onDeleteElement = onDeleteElement,
-                background = background,
-                shape = shape,
-                content = content
-            )
+                layer = ScreenshotLayer.EDITOR,
+                modifier = modifier
+            ) {
+                StoryEditorContent(
+                    state = state,
+                    onClick = onClick,
+                    onDeleteElement = onDeleteElement,
+                    background = background,
+                    shape = shape,
+                    content = content
+                )
+            }
         }
     }
 }
@@ -390,8 +393,8 @@ private class StoryEditorElementScopeImpl(
 
                         // Detect taps
                         val isTapEvent = editorState.draggedElement == null &&
-                            event.changes.fastAll { it.changedToUp() } &&
-                            event.changes[0].uptimeMillis - down.uptimeMillis < 500
+                                event.changes.fastAll { it.changedToUp() } &&
+                                event.changes[0].uptimeMillis - down.uptimeMillis < 500
                         if (isTapEvent) {
                             onTap()
                             return@awaitPointerEventScope
