@@ -33,7 +33,7 @@ private val LocalRootWindowInsetsHolder = staticCompositionLocalOf<WindowInsetsH
     error("CompositionLocal LocalRootWindowInsetsHolder not present")
 }
 
-internal fun Modifier.imePadding(ignoreNavigationBar: Boolean): Modifier = composed {
+fun Modifier.imePadding(ignoreNavigationBar: Boolean): Modifier = composed {
     val inset = currentWindowInsetsHolderForAndroidView().ime
         .let {
             if (ignoreNavigationBar) {
