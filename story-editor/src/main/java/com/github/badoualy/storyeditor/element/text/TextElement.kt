@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
@@ -44,8 +45,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -227,6 +226,8 @@ fun StoryEditorElementScope.TextElement(
     elementPadding: PaddingValues = StoryTextElementDefaults.Padding,
     backgroundRadius: Dp = StoryTextElementDefaults.BackgroundRadius,
     lineSpacingExtra: TextUnit = 5.sp,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     fontStyles: ImmutableList<StoryTextElement.FontStyle> = StoryTextElementDefaults.FontStyle.DefaultList,
     colorSchemes: ImmutableList<StoryElement.ColorScheme> = StoryElement.ColorScheme.DefaultList,
 ) {
@@ -291,6 +292,8 @@ fun StoryEditorElementScope.TextElement(
                 backgroundRadius = backgroundRadius,
                 lineSpacingExtra = lineSpacingExtra,
                 maxWidth = maxWidth,
+                keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
                 modifier = Modifier.focusableElement(element, focusRequester, skipFocusable = true),
             )
         }
@@ -306,6 +309,8 @@ fun TextElementTextField(
     backgroundRadius: Dp = 0.dp,
     lineSpacingExtra: TextUnit = 0.sp,
     maxWidth: Float = Float.POSITIVE_INFINITY,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
     onValueChange: (TextFieldValue) -> Unit = { element.text = it },
     decorationBox: @Composable (innerTextField: @Composable () -> Unit) -> Unit =
         @Composable { innerTextField -> innerTextField() }
@@ -397,10 +402,8 @@ fun TextElementTextField(
             textStyle = mergedTextStyle,
             cursorBrush = SolidColor(textColor),
             enabled = enabled,
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Words,
-                imeAction = ImeAction.None
-            ),
+            keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             onTextLayout = { layout ->
                 element.updateLayoutResult(layout)
                 if (layout.layoutInput.text.isEmpty()) {
