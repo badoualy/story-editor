@@ -2,6 +2,8 @@ plugins {
     id 'com.android.library'
     id 'kotlin-android'
     id 'maven-publish'
+
+    id 'org.jetbrains.kotlin.plugin.compose'
 }
 
 android {
@@ -35,9 +37,6 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion "1.5.15"
-    }
 }
 
 afterEvaluate {
@@ -48,19 +47,19 @@ afterEvaluate {
 
                 groupId = 'com.github.badoualy'
                 artifactId = 'story-editor'
-                version = '1.5.1'
+                version = '1.6.0'
             }
         }
     }
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.25"
-    implementation "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.1.20"
+    implementation "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0"
 
-    implementation "androidx.compose.ui:ui:1.7.5"
-    implementation "androidx.compose.animation:animation:1.7.5"
-    implementation "androidx.compose.ui:ui-util:1.7.5"
+    implementation "androidx.compose.ui:ui:1.8.3"
+    implementation "androidx.compose.animation:animation:1.8.3"
+    implementation "androidx.compose.ui:ui-util:1.8.3"
 
-    implementation "androidx.compose.material3:material3:1.3.1"
+    implementation "androidx.compose.material3:material3:1.3.2"
 }

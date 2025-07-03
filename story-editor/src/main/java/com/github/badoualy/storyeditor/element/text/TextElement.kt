@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -59,10 +60,9 @@ import com.github.badoualy.storyeditor.StoryEditorState.ScreenshotMode
 import com.github.badoualy.storyeditor.StoryElement
 import com.github.badoualy.storyeditor.StoryElementTransformation
 import com.github.badoualy.storyeditor.TransformableStoryElement
-import com.github.badoualy.storyeditor.util.clearFocusOnKeyboardClose
+import com.github.badoualy.storyeditor.util.ClearFocusOnKeyboardCloseEffect
 import com.github.badoualy.storyeditor.util.getLines
 import com.github.badoualy.storyeditor.util.horizontalPadding
-import com.github.badoualy.storyeditor.util.imePadding
 import com.github.badoualy.storyeditor.util.plus
 import com.github.badoualy.storyeditor.util.toDpSize
 import kotlinx.collections.immutable.ImmutableList
@@ -162,13 +162,13 @@ class StoryTextElement(
     }
 
     internal fun toggleAlignType() {
-        val index = (alignType.ordinal + 1) % AlignType.values().size
-        alignType = AlignType.values()[index]
+        val index = (alignType.ordinal + 1) % AlignType.entries.size
+        alignType = AlignType.entries[index]
     }
 
     internal fun toggleColorSchemeType() {
-        val index = (colorSchemeType.ordinal + 1) % ColorSchemeType.values().size
-        colorSchemeType = ColorSchemeType.values()[index]
+        val index = (colorSchemeType.ordinal + 1) % ColorSchemeType.entries.size
+        colorSchemeType = ColorSchemeType.entries[index]
     }
 
     fun textStyle(): TextStyle {
@@ -240,7 +240,7 @@ fun StoryEditorElementScope.TextElement(
         }
         if (isFocused) {
             val focusManager = LocalFocusManager.current
-            focusManager.clearFocusOnKeyboardClose()
+            focusManager.ClearFocusOnKeyboardCloseEffect()
 
             TextElementEditorOverlay(
                 element = element,
@@ -450,7 +450,7 @@ fun TextElementEditorOverlay(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.4f))
-            .imePadding(ignoreNavigationBar = isScreenshotModeEnabled)
+            .imePadding()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,

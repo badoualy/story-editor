@@ -68,11 +68,11 @@ StoryEditor(
   }
 ) {
     elements.forEach { element ->
-       Element(element = element, modifier = Modifier) {
-           TextElement(
-               element = element,
-           )
-       }
+      Element(element = element, modifier = Modifier) {
+        TextElement(
+          element = element,
+        )
+      }
     }
 }
 
@@ -96,8 +96,6 @@ Screenshot
 You can take a screenshot of the editor's content via `editorState.takeScreenshot()`.
 
 * Specify a screenshot mode when creating your `StoryEditorState`.
-* A `ComposeView` is used to render the editor inside an `AndroidView`, which can then be rendered
-  on a bitmap. Because of this overhead, this feature is opt-in and disabled by default.
 
 Current restrictions:
 
@@ -108,7 +106,7 @@ Current restrictions:
 
 Screenshot mode:
 
-* `DISABLED`: Screenshot support is disabled, no AndroidView used
+* `DISABLED`: Screenshot support is disabled
 * `FULL`: Screenshot support is enabled, and the screenshot will contain background + content
 * `FULL_NOT_CLIPPED`: Same as `FULL`, but the screenshot won't be clipped to the `StoryEditor`'s
   shape. This is useful when you specify a shape for the background, and you don't want the

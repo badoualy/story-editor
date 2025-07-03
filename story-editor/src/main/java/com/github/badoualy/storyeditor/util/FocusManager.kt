@@ -1,8 +1,8 @@
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "unused")
-
 package com.github.badoualy.storyeditor.util
 
-import android.annotation.SuppressLint
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,10 +13,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.filter
 
-@SuppressLint("ComposableNaming")
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun FocusManager.clearFocusOnKeyboardClose() {
-    val isImeVisible by rememberUpdatedState(currentWindowInsetsHolderForAndroidView().ime.isVisible)
+fun FocusManager.ClearFocusOnKeyboardCloseEffect() {
+    val isImeVisible by rememberUpdatedState(WindowInsets.isImeVisible)
     LaunchedEffect(Unit) {
         // Weird bug where keyboard is closing when we focus an element rapidly after unselecting it
         // It might be because of re-composition

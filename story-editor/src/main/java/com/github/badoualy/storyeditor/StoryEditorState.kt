@@ -3,6 +3,7 @@
 package com.github.badoualy.storyeditor
 
 import android.graphics.Bitmap
+import android.graphics.Bitmap.createBitmap
 import android.net.Uri
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -11,7 +12,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.IntSize
-import com.github.badoualy.storyeditor.StoryEditorState.ScreenshotMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -100,7 +100,7 @@ class StoryEditorState(
     suspend fun takeScreenshot(config: Bitmap.Config = Bitmap.Config.RGB_565): Bitmap {
         require(screenshotMode != ScreenshotMode.DISABLED) { "screenshotMode set to DISABLED" }
         val destination = withContext(Dispatchers.Default) {
-            Bitmap.createBitmap(editorSize.width, editorSize.height, config)
+            createBitmap(editorSize.width, editorSize.height, config)
         }
 
         try {

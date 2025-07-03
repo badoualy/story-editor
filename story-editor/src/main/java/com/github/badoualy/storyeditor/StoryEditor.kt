@@ -52,7 +52,6 @@ import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.zIndex
 import com.github.badoualy.storyeditor.component.EditorDeleteButton
-import com.github.badoualy.storyeditor.util.ProvidesWindowInsets
 import com.github.badoualy.storyeditor.util.horizontalPadding
 import com.github.badoualy.storyeditor.util.verticalPadding
 
@@ -68,22 +67,18 @@ fun StoryEditor(
 ) {
     // When used in a Pager, without wrapping in a key, the size is never reported, investigate
     key(state) {
-        ProvidesWindowInsets {
-            ScreenshotLayer(
-                state = state,
-                layer = ScreenshotLayer.EDITOR,
-                modifier = modifier
-            ) {
-                StoryEditorContent(
-                    state = state,
-                    onClick = onClick,
-                    onDeleteElement = onDeleteElement,
-                    background = background,
-                    shape = shape,
-                    content = content
-                )
-            }
-        }
+        StoryEditorContent(
+            state = state,
+            onClick = onClick,
+            onDeleteElement = onDeleteElement,
+            background = background,
+            shape = shape,
+            content = content,
+            modifier = modifier.screenshotLayer(
+                editorState = state,
+                layer = ScreenshotLayer.EDITOR
+            )
+        )
     }
 }
 
@@ -99,33 +94,35 @@ private fun StoryEditorContent(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         // Background
-        ScreenshotLayer(
-            state = state,
-            layer = ScreenshotLayer.BACKGROUND,
-            modifier = Modifier.clip(shape)
-        ) {
-            Box(
-                modifier = Modifier
-                    .onSizeChanged { state.updateBackgroundSize(it) }
-                    .pointerInput(state, state.editMode) {
-                        if (!state.editMode) return@pointerInput
+        Box(
+            modifier = Modifier
+                .clip(shape)
+                .screenshotLayer(
+                    editorState = state,
+                    layer = ScreenshotLayer.BACKGROUND
+                )
+                .onSizeChanged { state.updateBackgroundSize(it) }
+                .pointerInput(state, state.editMode) {
+                    if (!state.editMode) return@pointerInput
 
-                        detectTapGestures {
-                            if (state.draggedElement != null) return@detectTapGestures
-                            if (state.focusedElement != null) return@detectTapGestures
-                            onClick()
-                        }
+                    detectTapGestures {
+                        if (state.draggedElement != null) return@detectTapGestures
+                        if (state.focusedElement != null) return@detectTapGestures
+                        onClick()
                     }
-            ) {
-                background()
-            }
+                }
+        ) {
+            background()
         }
 
         // Elements
-        ScreenshotLayer(
-            state = state,
-            layer = ScreenshotLayer.ELEMENTS,
-            modifier = Modifier.fillMaxSize()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .screenshotLayer(
+                    editorState = state,
+                    layer = ScreenshotLayer.ELEMENTS
+                )
         ) {
             val scope = remember(state, onDeleteElement) {
                 StoryEditorScopeImpl(state, onDeleteElement)

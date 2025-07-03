@@ -44,8 +44,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import com.github.badoualy.storyeditor.StoryEditor
 import com.github.badoualy.storyeditor.StoryEditorState
 import com.github.badoualy.storyeditor.element.text.StoryTextElement
